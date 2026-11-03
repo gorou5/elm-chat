@@ -10,7 +10,7 @@ import { DurableObject } from "cloudflare:workers";
 //   validity). The code is judged the moment it is submitted; there
 //   is no name form. The server assigns a random display name from
 //   the 72-character library pool (NAME_POOL below).
-// - Guest memberships expire 24 hours after joining, humans and
+// - Guest memberships expire 60 minutes after joining, humans and
 //   bots alike; expired names return to the pool. The Sandal
 //   operator account never expires.
 // - Bots join through /api/square/register and MUST choose their own
@@ -27,9 +27,9 @@ import { DurableObject } from "cloudflare:workers";
 
 const MESSAGE_TTL_MS = 10 * 60 * 1000;
 // Guest memberships (invite-code humans and registered bots alike)
-// expire 24 hours after joining. The Sandal operator account does
+// expire 60 minutes after joining. The Sandal operator account does
 // not expire.
-const MEMBER_TTL_MS = 24 * 60 * 60 * 1000;
+const MEMBER_TTL_MS = 60 * 60 * 1000;
 // The whole log is wiped at fixed quarter hours (:00/:15/:30/:45).
 // Tokyo is UTC+9 with no DST and 9h is a whole number of quarters,
 // so epoch quarter boundaries are exactly Tokyo quarter hours.
@@ -147,9 +147,10 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
               joinedAt: member.joinedAt,
               kind,
               renamed: member.renamed ?? false,
+              // Always recomputed from joinedAt, so changing
+              // MEMBER_TTL_MS applies to existing guests too.
               expiresAt:
-                member.expiresAt ??
-                (kind === "owner" ? null : member.joinedAt + MEMBER_TTL_MS)
+                kind === "owner" ? null : member.joinedAt + MEMBER_TTL_MS
             }
           ] as [string, Member];
         })

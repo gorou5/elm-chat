@@ -1894,12 +1894,12 @@ select {
 
 /* ---- Babili square: the homepage is one permanent public chat ---- */
 .square-shell {
-  --background: #ffffff;
-  --foreground: #09090b;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --primary: #18181b;
-  --muted-foreground: #71717a;
+  --background: #f7f3ea;
+  --foreground: #3b382f;
+  --border: #e3dcc9;
+  --input: #ddd5bf;
+  --primary: #2d2a26;
+  --muted-foreground: #8a8271;
   background: var(--background);
   box-sizing: border-box;
   color: var(--foreground);
@@ -1923,13 +1923,13 @@ select {
 }
 
 .square-shell .primary-button:hover {
-  background: #27272a;
+  background: #45403a;
   box-shadow: 0 1px 2px rgba(9, 9, 11, 0.12);
   transform: none;
 }
 
 .square-shell .secondary-button {
-  background: #ffffff;
+  background: #fffdf7;
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05);
@@ -1940,7 +1940,7 @@ select {
 }
 
 .square-shell .secondary-button:hover {
-  background: #fafafa;
+  background: #f3eddd;
   box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05);
   transform: none;
 }
@@ -1984,7 +1984,7 @@ select {
 
 .square-invite-bar {
   align-items: center;
-  background: #fafafa;
+  background: #efe9da;
   border-bottom: 1px solid var(--border);
   box-sizing: border-box;
   color: var(--muted-foreground);
@@ -2014,7 +2014,7 @@ select {
 }
 
 .square-msg {
-  border-bottom: 1px solid #f4f4f5;
+  border-bottom: 1px solid #eae3cf;
   padding: 8px 0;
 }
 
@@ -2072,7 +2072,7 @@ select {
 
 .square-composer input,
 .square-join input {
-  background: transparent;
+  background: #fffdf7;
   border: 1px solid var(--input);
   border-radius: 8px;
   box-sizing: border-box;
@@ -2281,4 +2281,25 @@ select {
   flex: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   width: calc(6ch + 36px);
+}
+
+.square-msg-avatar {
+  border-radius: 50%;
+  height: 22px;
+  margin-right: 6px;
+  object-fit: cover;
+  vertical-align: -6px;
+  width: 22px;
+}
+
+.square-dow {
+  margin-left: 6px;
+}
+
+.square-dow--holiday {
+  color: #dc2626;
+}
+
+.square-clock--alert .square-dow {
+  color: #ffffff;
 }

@@ -905,6 +905,7 @@ type SquareMessageItem = {
   text: string;
   ts: number;
   expiresAt: number;
+  avatar?: string | null;
 };
 
 const SQUARE_MEMBER_KEY = "babili:square:member";
@@ -916,12 +917,41 @@ const tokyoClock = new Intl.DateTimeFormat("en-GB", {
   second: "2-digit",
   hour12: false
 });
+const tokyoDateFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric"
+});
+const WEEKDAY_KANJI = ["日", "月", "火", "水", "木", "金", "土"];
+// Japanese national holidays (incl. 振替休日・国民の休日), generated
+// from the official rules. Extend the table as years roll on.
+const JP_HOLIDAYS: Record<number, ReadonlySet<string>> = {
+  2025: new Set(["1/1", "1/13", "2/11", "2/23", "2/24", "3/20", "4/29", "5/3", "5/4", "5/5", "5/6", "7/21", "8/11", "9/15", "9/23", "10/13", "11/3", "11/23", "11/24"]),
+  2026: new Set(["1/1", "1/12", "2/11", "2/23", "3/20", "4/29", "5/3", "5/4", "5/5", "5/6", "7/20", "8/11", "9/21", "9/22", "9/23", "10/12", "11/3", "11/23"]),
+  2027: new Set(["1/1", "1/11", "2/11", "2/23", "3/21", "3/22", "4/29", "5/3", "5/4", "5/5", "7/19", "8/11", "9/20", "9/23", "10/11", "11/3", "11/23"])
+};
+
+function tokyoWeekday(ts: number): { kanji: string; holiday: boolean } {
+  const parts = tokyoDateFmt.formatToParts(ts);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const year = get("year");
+  const month = get("month");
+  const day = get("day");
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return {
+    kanji: WEEKDAY_KANJI[weekday],
+    holiday: JP_HOLIDAYS[year]?.has(`${month}/${day}`) ?? false
+  };
+}
 
 type SquareMember = {
   token: string;
   name: string;
   renamed: boolean;
   canInvite: boolean;
+  avatar: string | null;
 };
 
 function loadStoredMember(): SquareMember | null {
@@ -933,7 +963,8 @@ function loadStoredMember(): SquareMember | null {
       token: parsed.token,
       name: parsed.name,
       renamed: parsed.renamed ?? false,
-      canInvite: parsed.canInvite ?? parsed.name === "Sandal"
+      canInvite: parsed.canInvite ?? parsed.name === "Sandal",
+      avatar: parsed.avatar ?? null
     };
   } catch {
     return null;
@@ -1031,11 +1062,18 @@ function SquarePage() {
           name: string;
           renamed: boolean;
           canInvite: boolean;
+          avatar?: string | null;
         };
         if (!cancelled) {
           setMember((previous) => {
             if (!previous) return previous;
-            const next = { ...previous, ...view };
+            const next: SquareMember = {
+              ...previous,
+              name: view.name,
+              renamed: view.renamed,
+              canInvite: view.canInvite,
+              avatar: view.avatar ?? null
+            };
             storeMember(next);
             return next;
           });
@@ -1151,6 +1189,7 @@ function SquarePage() {
         name?: string;
         renamed?: boolean;
         canInvite?: boolean;
+        avatar?: string | null;
         error?: string;
       };
       if (!response.ok || !data.token || !data.name) {
@@ -1167,7 +1206,8 @@ function SquarePage() {
         token: data.token,
         name: data.name,
         renamed: data.renamed ?? false,
-        canInvite: data.canInvite ?? false
+        canInvite: data.canInvite ?? false,
+        avatar: data.avatar ?? null
       };
       storeMember(next);
       setMember(next);
@@ -1288,6 +1328,16 @@ function SquarePage() {
           role="timer"
         >
           {tokyoClock.format(now)}
+          {(() => {
+            const weekday = tokyoWeekday(now);
+            return (
+              <span
+                className={`square-dow${weekday.holiday ? " square-dow--holiday" : ""}`}
+              >
+                {weekday.kanji}
+              </span>
+            );
+          })()}
         </div>
         <div className="square-actions">
           {member ? (
@@ -1313,6 +1363,9 @@ function SquarePage() {
                 </form>
               ) : (
                 <>
+                  {member.avatar ? (
+                    <img alt="" className="square-msg-avatar" src={member.avatar} />
+                  ) : null}
                   <span className="square-member-name">{member.name}</span>
                   {!member.renamed ? (
                     <button
@@ -1387,6 +1440,9 @@ function SquarePage() {
       >
         {visibleMessages.map((message) => (
           <li className="square-msg" key={message.id}>
+            {message.avatar ? (
+              <img alt="" className="square-msg-avatar" src={message.avatar} />
+            ) : null}
             <span className="square-msg-name">{message.name}</span>
             <time className="square-msg-time" dateTime={new Date(message.ts).toISOString()}>
               {formatClock(message.ts)}
@@ -1482,6 +1538,7 @@ function EnsalutiPage() {
         name?: string;
         renamed?: boolean;
         canInvite?: boolean;
+        avatar?: string | null;
         error?: string;
       };
       if (!response.ok || !data.token || !data.name) {
@@ -1494,7 +1551,8 @@ function EnsalutiPage() {
         token: data.token,
         name: data.name,
         renamed: data.renamed ?? true,
-        canInvite: data.canInvite ?? true
+        canInvite: data.canInvite ?? true,
+        avatar: data.avatar ?? null
       };
       storeMember(next);
       setMember(next);

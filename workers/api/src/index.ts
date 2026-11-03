@@ -13,8 +13,16 @@ import { SquareDurableObject } from "./square";
 
 export { RoomDurableObject, SquareDurableObject };
 
+type KvReadLike = {
+  getWithMetadata(
+    key: string,
+    type: "arrayBuffer"
+  ): Promise<{ value: ArrayBuffer | null; metadata: { ct?: string } | null }>;
+};
+
 type Env = {
   ASSETS: Fetcher;
+  AVATARS: KvReadLike;
   GROWTH?: AnalyticsEngineDataset;
   ROOM_OBJECT: DurableObjectNamespace<RoomDurableObject>;
   SQUARE: DurableObjectNamespace<SquareDurableObject>;
@@ -355,6 +363,25 @@ function routeApi(request: Request, env: Env): Promise<Response> {
   // One singleton Durable Object owns members, invite codes, and the
   // rolling 10-minute message history.
   if (url.pathname.startsWith("/api/square/")) {
+    // Avatar reads are served straight from KV; everything else
+    // (including avatar uploads) belongs to the Durable Object.
+    const avatarMatch = url.pathname.match(/^\/api\/square\/avatar\/(.+)$/);
+    if (avatarMatch && request.method === "GET") {
+      const name = decodeURIComponent(avatarMatch[1]);
+      return env.AVATARS.getWithMetadata(`avatar:${name}`, "arrayBuffer").then(
+        ({ value, metadata }) => {
+          if (!value) return json({ error: "Not found." }, 404);
+          return new Response(value, {
+            headers: {
+              "content-type": metadata?.ct ?? "image/png",
+              "cache-control": "public, max-age=300",
+              "referrer-policy": "no-referrer",
+              "x-content-type-options": "nosniff"
+            }
+          });
+        }
+      );
+    }
     const stub = env.SQUARE.getByName("babili-square");
     return stub.fetch(request);
   }

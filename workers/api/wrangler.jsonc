@@ -33,6 +33,12 @@
       "dataset": "elm_chat_growth"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "AVATARS",
+      "id": "077c7e00989448f5abdfd5d26aeb0248"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {

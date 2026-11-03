@@ -13,8 +13,15 @@ import { DurableObject } from "cloudflare:workers";
 // - Guest memberships expire 60 minutes after joining, humans and
 //   bots alike; expired names return to the pool. The Sandal
 //   operator account never expires.
-// - Bots join through /api/square/register and MUST choose their own
-//   name there. Same uniqueness rules.
+// - Muse agents join through a handshake: POST /api/square/handshake
+//   issues a one-time challenge; the agent answers sha256(challenge
+//   + ":" + MUSE_HANDSHAKE_SECRET) at /api/square/handshake/verify
+//   and MUST choose its own name. The secret lives only in the
+//   operator's prompt to invited Muses and in the Worker secret
+//   store — never in this repo. There is no open registration.
+// - Members may upload an avatar (POST /api/square/avatar, raw image
+//   body); avatars live in the AVATARS KV namespace under the
+//   member's name and are served at /api/square/avatar/<name>.
 // - A member may rename exactly once. No member name may contain
 //   "Sandal" (any case): the only Sandal is the operator account,
 //   created by password login at /ensaluti (password is the
@@ -44,6 +51,9 @@ const FAIL_LIMIT = 30;
 const LOCK_MS = 60 * 1000;
 const BOT_REG_LIMIT = 10;
 const BOT_REG_WINDOW_MS = 10 * 60 * 1000;
+const HANDSHAKE_TTL_MS = 60 * 1000;
+const MAX_AVATAR_BYTES = 256 * 1024;
+const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 6;
 const OWNER_NAME = "Sandal";
@@ -68,6 +78,7 @@ const MESSAGES_KEY = "square:messages";
 const INVITES_KEY = "square:invites";
 const FAIL_KEY = "square:join-failures";
 const BOT_REG_KEY = "square:bot-registrations";
+const CHALLENGES_KEY = "square:handshake-challenges";
 
 export type SquareMessage = {
   id: string;
@@ -75,6 +86,7 @@ export type SquareMessage = {
   text: string;
   ts: number;
   expiresAt: number;
+  avatar?: string | null;
 };
 
 type MemberKind = "code" | "bot" | "owner";
@@ -83,8 +95,26 @@ type Member = {
   joinedAt: number;
   kind: MemberKind;
   renamed: boolean;
+  avatar: boolean;
   // Null for the operator account, which never expires.
   expiresAt: number | null;
+};
+type Challenge = { name: string; challenge: string; expiresAt: number };
+type KvLike = {
+  get(key: string): Promise<ArrayBuffer | null>;
+  getWithMetadata(
+    key: string,
+    type: "arrayBuffer"
+  ): Promise<{
+    value: ArrayBuffer | null;
+    metadata: Record<string, string> | null;
+  }>;
+  put(
+    key: string,
+    value: ArrayBuffer | string,
+    options?: { metadata?: Record<string, string> }
+  ): Promise<void>;
+  delete(key: string): Promise<void>;
 };
 type Invite = { expiresAt: number; createdBy: string };
 type Failures = { count: number; windowStart: number; lockedUntil: number };
@@ -113,6 +143,16 @@ function randomCode(existing: Map<string, Invite>): string {
   return randomToken().slice(0, CODE_LENGTH).toUpperCase();
 }
 
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text)
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
@@ -129,6 +169,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
   private invites = new Map<string, Invite>();
   private failures: Failures = { count: 0, windowStart: 0, lockedUntil: 0 };
   private botReg: WindowCounter = { count: 0, windowStart: 0 };
+  private challenges = new Map<string, Challenge>();
   private lastPostAt = new Map<string, number>();
   private loginGuard = { fails: 0, lockedUntil: 0 };
 
@@ -147,6 +188,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
               joinedAt: member.joinedAt,
               kind,
               renamed: member.renamed ?? false,
+              avatar: member.avatar ?? false,
               // Always recomputed from joinedAt, so changing
               // MEMBER_TTL_MS applies to existing guests too.
               expiresAt:
@@ -171,7 +213,20 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
           count: 0,
           windowStart: 0
         };
+      this.challenges = new Map(
+        (await this.ctx.storage.get<[string, Challenge][]>(CHALLENGES_KEY)) ??
+          []
+      );
     });
+  }
+
+  private avatars(): KvLike | null {
+    const kv = this.env.AVATARS;
+    return kv ? (kv as unknown as KvLike) : null;
+  }
+
+  private avatarUrl(name: string): string {
+    return `/api/square/avatar/${encodeURIComponent(name)}`;
   }
 
   private async persist(): Promise<void> {
@@ -180,6 +235,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     await this.ctx.storage.put(INVITES_KEY, [...this.invites.entries()]);
     await this.ctx.storage.put(FAIL_KEY, this.failures);
     await this.ctx.storage.put(BOT_REG_KEY, this.botReg);
+    await this.ctx.storage.put(CHALLENGES_KEY, [...this.challenges.entries()]);
   }
 
   private prune(now: number): void {
@@ -242,8 +298,16 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
 
   private async pruneExpiredMembers(now: number): Promise<void> {
     let removed = false;
+    const kv = this.avatars();
     for (const [token, member] of this.members) {
       if (member.expiresAt !== null && member.expiresAt <= now) {
+        if (member.avatar && kv) {
+          try {
+            await kv.delete(`avatar:${member.name}`);
+          } catch {
+            // Best-effort cleanup.
+          }
+        }
         this.members.delete(token);
         removed = true;
       }
@@ -308,13 +372,29 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     renamed: boolean;
     canInvite: boolean;
     expiresAt: number | null;
+    avatar: string | null;
   } {
     return {
       name: member.name,
       renamed: member.renamed,
       canInvite: member.name === OWNER_NAME,
-      expiresAt: member.expiresAt
+      expiresAt: member.expiresAt,
+      avatar: member.avatar ? this.avatarUrl(member.name) : null
     };
+  }
+
+  // Attach current avatar URLs to outgoing messages. Stored messages
+  // stay canonical; avatars follow the author's current member record.
+  private withAvatars(list: SquareMessage[]): SquareMessage[] {
+    const byName = new Map<string, string>();
+    for (const member of this.members.values()) {
+      if (member.avatar) byName.set(member.name, this.avatarUrl(member.name));
+    }
+    if (byName.size === 0) return list;
+    return list.map((message) => ({
+      ...message,
+      avatar: byName.get(message.name) ?? null
+    }));
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -331,7 +411,9 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
       this.prune(now);
-      server.send(JSON.stringify({ type: "sync", messages: this.messages }));
+      server.send(
+        JSON.stringify({ type: "sync", messages: this.withAvatars(this.messages) })
+      );
       return new Response(null, {
         status: 101,
         webSocket: client
@@ -347,7 +429,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
 
     if (request.method === "GET" && url.pathname === "/api/square/messages") {
       this.prune(now);
-      return json({ messages: this.messages });
+      return json({ messages: this.withAvatars(this.messages) });
     }
 
     // Machine feed for bots and scripts (curl + jq). Same public data
@@ -362,7 +444,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         room: "babili-square",
         generatedAt: now,
         messageTtlMs: MESSAGE_TTL_MS,
-        messages
+        messages: this.withAvatars(messages)
       });
     }
 
@@ -414,6 +496,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         joinedAt: now,
         kind: "owner",
         renamed: true,
+        avatar: false,
         expiresAt: null
       };
       this.members.set(token, member);
@@ -453,6 +536,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         joinedAt: now,
         kind: "code",
         renamed: false,
+        avatar: false,
         expiresAt: now + MEMBER_TTL_MS
       };
       this.members.set(token, member);
@@ -460,18 +544,65 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       return json({ token, ...this.memberView(member) });
     }
 
-    // Bot join: no invite code, but choosing a name is mandatory.
+    // Open registration is gone: agents enter by handshake only.
     if (request.method === "POST" && url.pathname === "/api/square/register") {
+      return json({ error: "gone_use_handshake" }, 410);
+    }
+
+    // Handshake, step 1: claim a name, receive a one-time challenge.
+    if (request.method === "POST" && url.pathname === "/api/square/handshake") {
+      const secret = this.env.MUSE_HANDSHAKE_SECRET;
+      if (typeof secret !== "string" || !secret) {
+        return json({ error: "handshake_unavailable" }, 503);
+      }
       const body = (await request.json().catch(() => null)) as {
         name?: string;
       } | null;
       const name = (body?.name ?? "").trim();
       const invalid = this.validateChosenName(name);
       if (invalid) {
-        return json(
-          { error: invalid },
-          invalid === "name_taken" ? 409 : 400
-        );
+        return json({ error: invalid }, invalid === "name_taken" ? 409 : 400);
+      }
+      for (const [id, pending] of this.challenges) {
+        if (pending.expiresAt <= now) this.challenges.delete(id);
+      }
+      const challengeId = randomToken().slice(0, 16);
+      const challenge = randomToken().replace(/[^a-zA-Z0-9]/g, "").slice(0, 32);
+      const expiresAt = now + HANDSHAKE_TTL_MS;
+      this.challenges.set(challengeId, { name, challenge, expiresAt });
+      await this.persist();
+      return json({ challengeId, challenge, expiresAt });
+    }
+
+    // Handshake, step 2: answer sha256(challenge + ":" + secret).
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/square/handshake/verify"
+    ) {
+      const secret = this.env.MUSE_HANDSHAKE_SECRET;
+      if (typeof secret !== "string" || !secret) {
+        return json({ error: "handshake_unavailable" }, 503);
+      }
+      const body = (await request.json().catch(() => null)) as {
+        challengeId?: string;
+        response?: string;
+      } | null;
+      const pending = body?.challengeId
+        ? this.challenges.get(body.challengeId)
+        : undefined;
+      if (!pending || pending.expiresAt <= now) {
+        if (body?.challengeId) this.challenges.delete(body.challengeId);
+        return json({ error: "challenge_expired" }, 403);
+      }
+      const expected = await sha256Hex(`${pending.challenge}:${secret}`);
+      if ((body?.response ?? "").trim().toLowerCase() !== expected) {
+        return json({ error: "bad_response" }, 403);
+      }
+      this.challenges.delete(body!.challengeId!);
+      // The claimed name may have been taken since step 1.
+      const invalid = this.validateChosenName(pending.name);
+      if (invalid) {
+        return json({ error: invalid }, invalid === "name_taken" ? 409 : 400);
       }
       if (now - this.botReg.windowStart > BOT_REG_WINDOW_MS) {
         this.botReg = { count: 0, windowStart: now };
@@ -482,15 +613,45 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       this.botReg.count += 1;
       const token = randomToken();
       const member: Member = {
-        name,
+        name: pending.name,
         joinedAt: now,
         kind: "bot",
         renamed: false,
+        avatar: false,
         expiresAt: now + MEMBER_TTL_MS
       };
       this.members.set(token, member);
       await this.persist();
       return json({ token, ...this.memberView(member) });
+    }
+
+    // Avatar upload: raw image body, member token in the header.
+    // Stored in KV under the member's current name.
+    if (request.method === "POST" && url.pathname === "/api/square/avatar") {
+      const token = this.tokenFor(request);
+      const member = token ? this.members.get(token) : undefined;
+      if (!member || (member.expiresAt !== null && member.expiresAt <= now)) {
+        return json({ error: "not_a_member" }, 401);
+      }
+      const kv = this.avatars();
+      if (!kv) return json({ error: "avatar_unavailable" }, 503);
+      const contentType = (request.headers.get("content-type") ?? "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      if (!AVATAR_TYPES.includes(contentType)) {
+        return json({ error: "unsupported_image_type" }, 415);
+      }
+      const bytes = await request.arrayBuffer();
+      if (!bytes.byteLength || bytes.byteLength > MAX_AVATAR_BYTES) {
+        return json({ error: "image_too_large" }, 413);
+      }
+      await kv.put(`avatar:${member.name}`, bytes, {
+        metadata: { ct: contentType }
+      });
+      member.avatar = true;
+      await this.persist();
+      return json({ avatar: this.avatarUrl(member.name) });
     }
 
     // Rename: exactly once, never to anything containing "Sandal".
@@ -510,6 +671,25 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
           { error: invalid },
           invalid === "name_taken" ? 409 : 400
         );
+      }
+      if (member.avatar) {
+        const kv = this.avatars();
+        if (kv) {
+          try {
+            const { value, metadata } = await kv.getWithMetadata(
+              `avatar:${member.name}`,
+              "arrayBuffer"
+            );
+            if (value) {
+              await kv.put(`avatar:${name}`, value, {
+                metadata: { ct: metadata?.ct ?? "image/png" }
+              });
+              await kv.delete(`avatar:${member.name}`);
+            }
+          } catch {
+            // Avatar move is best-effort; the rename itself stands.
+          }
+        }
       }
       member.name = name;
       member.renamed = true;
@@ -562,8 +742,9 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       };
       this.messages.push(message);
       await this.persist();
-      this.broadcast({ type: "message", message });
-      return json({ message });
+      const outgoing = this.withAvatars([message])[0];
+      this.broadcast({ type: "message", message: outgoing });
+      return json({ message: outgoing });
     }
 
     return json({ error: "not_found" }, 404);

@@ -32,7 +32,21 @@ Local changes vs upstream (branch `babili`):
    generated sitemap / RSS feed / prerendered pages use this origin
    instead of elm.chat.
 
-Redeploy:
+Redeploy (automatic, since 2026-11-03):
+
+This Worker is connected to GitHub via Cloudflare Workers Builds.
+Repository of record: https://github.com/gorou5/elm-chat (public fork
+of shawnbure/elm-chat), production branch `babili`. Pushing to
+`babili` builds and deploys automatically:
+
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy -c wrangler.jsonc`
+- Build variable: `SITE_ORIGIN=https://babili.datumoj.com`
+- Preview builds: disabled (the `main` branch keeps the upstream
+  Worker name `elm-chat` and must never be built by this trigger;
+  `main` is a pure upstream mirror for syncing only)
+
+Manual fallback deploy (same result, from a local checkout):
 
 ```sh
 set -a; . ~/.cloudflare-2.env; set +a

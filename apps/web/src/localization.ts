@@ -535,7 +535,7 @@ export const chinese: Record<MessageKey, string> = {
   readArticle: "读文章",
   pressKit: "媒体资料包",
   learnAbout: "了解 Babili",
-  heroTitle: "论巴别塔的倒掉。无账号、加密、快、用完即焚。",
+  heroTitle: "论巴别塔的倒掉",
   heroCopy: "基于链接的加密聊天：用颜色作身份，不用用户名；房间规矩由你在任何人加入之前定好。",
   nameMeaning: "短暂而无痕的消息传递",
   githubHeadline: "在 GitHub 上点星或审查",

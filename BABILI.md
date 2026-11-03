@@ -69,8 +69,8 @@ Local changes vs upstream (branch `babili`):
    feed, duplicated policy metrics, star/fork counts, the
    room-secret explainer, and the header's security-and-limitations
    link (not required; the warning itself stays). The document
-   title is just "Babili"; the Chinese headline opens with
-   "论巴别塔的倒掉。". Duration units (minutes/hours/days) are
+   title is just "Babili"; the Chinese headline is exactly
+   "论巴别塔的倒掉". Duration units (minutes/hours/days) are
    segmented buttons everywhere, not dropdowns — landing creation
    settings and the room's invite lifetime alike. The only GitHub
    reference on the landing is a single GitHub icon at the

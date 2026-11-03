@@ -19,7 +19,7 @@ datumoj Worker.
   has no GROWTH Analytics Engine binding, so this instance sends no
   growth events to elm.chat.
 
-Local changes vs upstream (branch `babili-deploy`):
+Local changes vs upstream (branch `babili`):
 
 1. `wrangler.jsonc` + `workers/api/wrangler.jsonc` — Worker renamed
    `elm-chat` -> `babili`, `workers_dev: false`, custom-domain route

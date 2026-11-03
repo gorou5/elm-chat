@@ -46,6 +46,15 @@ npm run deploy
 wrangler.jsonc. Do NOT use `npm run deploy:production` — that selects
 the workspace config with the upstream GROWTH dataset.
 
+Deployed 2026-11-03: Worker version a615baaa-dd94-456c-b2ad-e915c0084e14.
+Verified live the same day: homepage 200, sitemap/robots on the
+babili origin, POST /api/rooms created a Durable Object room,
+GET room returned status open, creator destroy returned status
+destroyed (test room cleaned up), /api/stars and /api/community
+returned the upstream GitHub data. Two-browser encrypted messaging
+was not re-tested here; it is covered by the upstream test suite
+(npm test) and the live room lifecycle above.
+
 Optional abuse protection (not enabled at launch): Cloudflare
 Turnstile stays inert until a site key is baked into the web build
 (`VITE_TURNSTILE_SITE_KEY`) and `TURNSTILE_SECRET` is set on the

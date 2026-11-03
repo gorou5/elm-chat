@@ -2216,3 +2216,22 @@ select {
   justify-content: center;
   padding: 8px 10px;
 }
+
+.square-rename {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.square-rename input {
+  background: transparent;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  height: 38px;
+  padding: 0 10px;
+  width: 150px;
+}

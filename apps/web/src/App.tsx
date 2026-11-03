@@ -55,7 +55,7 @@ import { useConversationScroll } from "./use-conversation-scroll";
 import { useConversationFind } from "./use-conversation-find";
 import { useConversationConcealment } from "./use-conversation-concealment";
 
-type View = "landing" | "marketing" | "room" | "square" | "create" | "invite";
+type View = "landing" | "marketing" | "room" | "square" | "create" | "ensaluti";
 
 type FileTransferState =
   | "offered"
@@ -126,10 +126,10 @@ function roomPathname(): { view: View; roomId?: string; marketingSlug?: Marketin
   if (window.location.pathname === "/new") {
     return { view: "create" };
   }
-  // Standalone invite-code page. Deliberately not linked from the
-  // homepage; it is reached by its direct URL only.
-  if (window.location.pathname === "/invite") {
-    return { view: "invite" };
+  // Operator login page (Sandal). Checked before the 8-character
+  // short-room pattern below, which "ensaluti" would otherwise match.
+  if (window.location.pathname === "/ensaluti") {
+    return { view: "ensaluti" };
   }
   const match = window.location.pathname.match(/^\/c\/([^/]+)$/);
   if (match) {
@@ -862,49 +862,87 @@ type SquareMessageItem = {
 
 const SQUARE_MEMBER_KEY = "babili:square:member";
 
+type SquareMember = {
+  token: string;
+  name: string;
+  renamed: boolean;
+  canInvite: boolean;
+};
+
+function loadStoredMember(): SquareMember | null {
+  try {
+    const raw = window.localStorage.getItem(SQUARE_MEMBER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SquareMember> & { token: string; name: string };
+    return {
+      token: parsed.token,
+      name: parsed.name,
+      renamed: parsed.renamed ?? false,
+      canInvite: parsed.canInvite ?? parsed.name === "Sandal"
+    };
+  } catch {
+    return null;
+  }
+}
+
+function storeMember(member: SquareMember): void {
+  window.localStorage.setItem(SQUARE_MEMBER_KEY, JSON.stringify(member));
+}
+
+// Long messages (over 10 characters) that arrive live are revealed
+// progressively, like a stream. History shown on arrival is static.
+function StreamingText({ text, animate }: { text: string; animate: boolean }) {
+  const chars = [...text];
+  const [count, setCount] = useState(() => (animate ? 0 : chars.length));
+  useEffect(() => {
+    if (!animate) {
+      setCount(chars.length);
+      return;
+    }
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setCount(chars.length);
+      return;
+    }
+    let shown = 0;
+    const step = Math.max(1, Math.ceil(chars.length / 45));
+    const timer = window.setInterval(() => {
+      shown += step;
+      if (shown >= chars.length) {
+        setCount(chars.length);
+        window.clearInterval(timer);
+      } else {
+        setCount(shown);
+      }
+    }, 30);
+    return () => window.clearInterval(timer);
+    // Runs once per message text; count is driven by the closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animate, text]);
+  return <>{chars.slice(0, count).join("")}</>;
+}
+
 function SquarePage() {
   const [messages, setMessages] = useState<SquareMessageItem[]>([]);
-  const [member, setMember] = useState<{ token: string; name: string } | null>(() => {
-    try {
-      const raw = window.localStorage.getItem(SQUARE_MEMBER_KEY);
-      return raw ? (JSON.parse(raw) as { token: string; name: string }) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [joinStep, setJoinStep] = useState<"code" | "name">("code");
+  const [member, setMember] = useState<SquareMember | null>(loadStoredMember);
   const [code, setCode] = useState("");
-  const [nameInput, setNameInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const logRef = useRef<HTMLOListElement | null>(null);
   const stickRef = useRef(true);
+  const staticIdsRef = useRef<Set<string> | null>(null);
   const memberToken = member?.token ?? null;
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch("/api/square/state");
-        if (!response.ok || cancelled) return;
-        const data = (await response.json()) as { requiresCode: boolean };
-        if (!data.requiresCode && !cancelled) setJoinStep("name");
-      } catch {
-        // Default stays on the code step.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
@@ -915,9 +953,25 @@ function SquarePage() {
         const response = await fetch("/api/square/me", {
           headers: { "x-member-token": memberToken }
         });
-        if (!response.ok && !cancelled) {
-          window.localStorage.removeItem(SQUARE_MEMBER_KEY);
-          setMember(null);
+        if (!response.ok) {
+          if (!cancelled) {
+            window.localStorage.removeItem(SQUARE_MEMBER_KEY);
+            setMember(null);
+          }
+          return;
+        }
+        const view = (await response.json()) as {
+          name: string;
+          renamed: boolean;
+          canInvite: boolean;
+        };
+        if (!cancelled) {
+          setMember((previous) => {
+            if (!previous) return previous;
+            const next = { ...previous, ...view };
+            storeMember(next);
+            return next;
+          });
         }
       } catch {
         // Transient failure: keep the stored membership.
@@ -937,12 +991,22 @@ function SquarePage() {
         previous.some((item) => item.id === incoming.id) ? previous : [...previous, incoming]
       );
     };
+    // The first batch (history fetch or first sync) is shown as-is;
+    // only messages arriving afterwards stream in.
+    const primeStatic = (batch: SquareMessageItem[]) => {
+      if (staticIdsRef.current === null) {
+        staticIdsRef.current = new Set(batch.map((item) => item.id));
+      }
+    };
     const loadHistory = async () => {
       try {
         const response = await fetch("/api/square/messages");
         if (!response.ok || cancelled) return;
         const data = (await response.json()) as { messages: SquareMessageItem[] };
-        if (!cancelled) setMessages(data.messages);
+        if (!cancelled) {
+          primeStatic(data.messages);
+          setMessages(data.messages);
+        }
       } catch {
         // The socket sync below covers the history.
       }
@@ -958,6 +1022,7 @@ function SquarePage() {
             message?: SquareMessageItem;
           };
           if (payload.type === "sync" && payload.messages) {
+            primeStatic(payload.messages);
             setMessages(payload.messages);
           }
           if (payload.type === "message" && payload.message) {
@@ -995,53 +1060,98 @@ function SquarePage() {
   }, [messages]);
 
   const visibleMessages = messages.filter((message) => message.expiresAt > now);
-  const dockError = member ? sendError : joinError;
+  const dockError = renaming ? renameError : member ? sendError : joinError;
 
+  // The invite code is judged by this call alone: valid code, and the
+  // visitor is a member under a server-assigned name. No name form.
   const submitJoin = async (event: FormEvent) => {
     event.preventDefault();
-    if (joinStep === "code") {
-      setJoinError(null);
-      setJoinStep("name");
-      return;
-    }
-    const name = nameInput.trim();
-    if (!name) {
-      setJoinError(t("invalidName"));
-      return;
-    }
     setJoining(true);
     setJoinError(null);
     try {
       const response = await fetch("/api/square/join", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: code.trim(), name })
+        body: JSON.stringify({ code: code.trim() })
       });
       const data = (await response.json().catch(() => ({}))) as {
         token?: string;
         name?: string;
+        renamed?: boolean;
+        canInvite?: boolean;
         error?: string;
       };
       if (!response.ok || !data.token || !data.name) {
         setJoinError(
           data.error === "invalid_code"
             ? t("invalidInviteCode")
-            : data.error === "name_taken"
-              ? t("nameTaken")
-              : data.error === "rate_limited"
-                ? t("squareRateLimited")
-                : t("joinFailed")
+            : data.error === "rate_limited"
+              ? t("squareRateLimited")
+              : t("joinFailed")
         );
-        if (data.error === "invalid_code") setJoinStep("code");
         return;
       }
-      const next = { token: data.token, name: data.name };
-      window.localStorage.setItem(SQUARE_MEMBER_KEY, JSON.stringify(next));
+      const next: SquareMember = {
+        token: data.token,
+        name: data.name,
+        renamed: data.renamed ?? false,
+        canInvite: data.canInvite ?? false
+      };
+      storeMember(next);
       setMember(next);
+      setCode("");
     } catch {
       setJoinError(t("joinFailed"));
     } finally {
       setJoining(false);
+    }
+  };
+
+  const submitRename = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!member) return;
+    const name = renameValue.trim();
+    if (!name) {
+      setRenameError(t("invalidName"));
+      return;
+    }
+    setRenameError(null);
+    try {
+      const response = await fetch("/api/square/rename", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: member.token, name })
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        name?: string;
+        renamed?: boolean;
+        canInvite?: boolean;
+        error?: string;
+      };
+      if (!response.ok || !data.name) {
+        setRenameError(
+          data.error === "forbidden_name"
+            ? t("sandalForbidden")
+            : data.error === "name_taken"
+              ? t("nameTaken")
+              : data.error === "already_renamed"
+                ? t("renameUsed")
+                : t("joinFailed")
+        );
+        return;
+      }
+      const next: SquareMember = {
+        ...member,
+        name: data.name,
+        renamed: data.renamed ?? true,
+        canInvite: data.canInvite ?? member.canInvite
+      };
+      storeMember(next);
+      setMember(next);
+      setRenaming(false);
+      setRenameValue("");
+    } catch {
+      setRenameError(t("joinFailed"));
     }
   };
 
@@ -1103,15 +1213,48 @@ function SquarePage() {
         <div className="square-actions">
           {member ? (
             <>
-              <span className="square-member-name">{member.name}</span>
-              <button
-                className="secondary-button"
-                id="generate-invite"
-                onClick={() => void generateInvite()}
-                type="button"
-              >
-                {t("generateInviteCode")}
-              </button>
+              {renaming ? (
+                <form className="square-rename" onSubmit={submitRename}>
+                  <input
+                    autoComplete="off"
+                    id="rename-input"
+                    maxLength={24}
+                    onChange={(event) => setRenameValue(event.target.value)}
+                    value={renameValue}
+                  />
+                  <button className="secondary-button" id="rename-save" type="submit">
+                    {t("saveName")}
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <span className="square-member-name">{member.name}</span>
+                  {!member.renamed ? (
+                    <button
+                      className="secondary-button"
+                      id="rename-button"
+                      onClick={() => {
+                        setRenameError(null);
+                        setRenameValue(member.name);
+                        setRenaming(true);
+                      }}
+                      type="button"
+                    >
+                      {t("changeName")}
+                    </button>
+                  ) : null}
+                </>
+              )}
+              {member.canInvite ? (
+                <button
+                  className="secondary-button"
+                  id="generate-invite"
+                  onClick={() => void generateInvite()}
+                  type="button"
+                >
+                  {t("generateInviteCode")}
+                </button>
+              ) : null}
             </>
           ) : null}
           <a
@@ -1159,7 +1302,16 @@ function SquarePage() {
             <time className="square-msg-time" dateTime={new Date(message.ts).toISOString()}>
               {formatClock(message.ts)}
             </time>
-            <p className="square-msg-text">{message.text}</p>
+            <p className="square-msg-text">
+              <StreamingText
+                animate={
+                  staticIdsRef.current !== null &&
+                  !staticIdsRef.current.has(message.id) &&
+                  [...message.text].length > 10
+                }
+                text={message.text}
+              />
+            </p>
           </li>
         ))}
       </ol>
@@ -1186,45 +1338,22 @@ function SquarePage() {
           </form>
         ) : (
           <form className="square-join" onSubmit={submitJoin}>
-            {joinStep === "code" ? (
-              <>
-                <label htmlFor="invite-code">{t("inviteCode")}</label>
-                <input
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  id="invite-code"
-                  onChange={(event) => setCode(event.target.value)}
-                  value={code}
-                />
-                <button
-                  className="primary-button"
-                  disabled={!code.trim()}
-                  id="join-continue"
-                  type="submit"
-                >
-                  {t("continueAction")}
-                </button>
-              </>
-            ) : (
-              <>
-                <label htmlFor="member-name">{t("displayName")}</label>
-                <input
-                  autoComplete="off"
-                  id="member-name"
-                  maxLength={24}
-                  onChange={(event) => setNameInput(event.target.value)}
-                  value={nameInput}
-                />
-                <button
-                  className="primary-button"
-                  disabled={joining || !nameInput.trim()}
-                  id="join-button"
-                  type="submit"
-                >
-                  {t("joinChat")}
-                </button>
-              </>
-            )}
+            <label htmlFor="invite-code">{t("inviteCode")}</label>
+            <input
+              autoCapitalize="characters"
+              autoComplete="off"
+              id="invite-code"
+              onChange={(event) => setCode(event.target.value)}
+              value={code}
+            />
+            <button
+              className="primary-button"
+              disabled={joining || !code.trim()}
+              id="join-button"
+              type="submit"
+            >
+              {t("joinChat")}
+            </button>
           </form>
         )}
       </footer>
@@ -1232,127 +1361,50 @@ function SquarePage() {
   );
 }
 
-function InvitePage() {
-  const [member, setMember] = useState<{ token: string; name: string } | null>(() => {
-    try {
-      const raw = window.localStorage.getItem(SQUARE_MEMBER_KEY);
-      return raw ? (JSON.parse(raw) as { token: string; name: string }) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [joinStep, setJoinStep] = useState<"code" | "name">("code");
-  const [code, setCode] = useState("");
-  const [nameInput, setNameInput] = useState("");
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [joining, setJoining] = useState(false);
-  const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  const memberToken = member?.token ?? null;
+function EnsalutiPage() {
+  const [member, setMember] = useState<SquareMember | null>(loadStoredMember);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!memberToken) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch("/api/square/me", {
-          headers: { "x-member-token": memberToken }
-        });
-        if (!response.ok && !cancelled) {
-          window.localStorage.removeItem(SQUARE_MEMBER_KEY);
-          setMember(null);
-        }
-      } catch {
-        // Transient failure: keep the stored membership.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [memberToken]);
-
-  const submitJoin = async (event: FormEvent) => {
+  const submitLogin = async (event: FormEvent) => {
     event.preventDefault();
-    if (joinStep === "code") {
-      setJoinError(null);
-      setJoinStep("name");
-      return;
-    }
-    const name = nameInput.trim();
-    if (!name) {
-      setJoinError(t("invalidName"));
-      return;
-    }
-    setJoining(true);
-    setJoinError(null);
+    setBusy(true);
+    setError(null);
     try {
-      const response = await fetch("/api/square/join", {
+      const response = await fetch("/api/square/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: code.trim(), name })
+        body: JSON.stringify({ password })
       });
       const data = (await response.json().catch(() => ({}))) as {
         token?: string;
         name?: string;
+        renamed?: boolean;
+        canInvite?: boolean;
         error?: string;
       };
       if (!response.ok || !data.token || !data.name) {
-        setJoinError(
-          data.error === "invalid_code"
-            ? t("invalidInviteCode")
-            : data.error === "name_taken"
-              ? t("nameTaken")
-              : data.error === "rate_limited"
-                ? t("squareRateLimited")
-                : t("joinFailed")
+        setError(
+          data.error === "rate_limited" ? t("squareRateLimited") : t("loginFailed")
         );
-        if (data.error === "invalid_code") setJoinStep("code");
         return;
       }
-      const next = { token: data.token, name: data.name };
-      window.localStorage.setItem(SQUARE_MEMBER_KEY, JSON.stringify(next));
+      const next: SquareMember = {
+        token: data.token,
+        name: data.name,
+        renamed: data.renamed ?? true,
+        canInvite: data.canInvite ?? true
+      };
+      storeMember(next);
       setMember(next);
+      setPassword("");
     } catch {
-      setJoinError(t("joinFailed"));
+      setError(t("loginFailed"));
     } finally {
-      setJoining(false);
+      setBusy(false);
     }
   };
-
-  const generateInvite = async () => {
-    if (!member) return;
-    try {
-      const response = await fetch("/api/square/invites", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: member.token })
-      });
-      if (!response.ok) return;
-      const data = (await response.json()) as { code: string; expiresAt: number };
-      setInvite(data);
-      setCopied(false);
-    } catch {
-      // Keep any previous code on screen.
-    }
-  };
-
-  const copyInvite = async () => {
-    if (!invite) return;
-    try {
-      await navigator.clipboard.writeText(invite.code);
-      setCopied(true);
-    } catch {
-      // Clipboard unavailable (permissions): the code stays visible to copy by hand.
-    }
-  };
-
-  const inviteLive = invite && invite.expiresAt > now ? invite : null;
 
   return (
     <main className="invite-shell">
@@ -1361,80 +1413,31 @@ function InvitePage() {
           <span className="square-brand-name">Babili</span>
           <span className="square-brand-sub">论巴别塔的倒掉</span>
         </div>
-        {member ? (
+        {member && member.name === "Sandal" ? (
           <div className="invite-panel">
             <span className="square-member-name">{member.name}</span>
-            <button
-              className="primary-button"
-              id="generate-invite"
-              onClick={() => void generateInvite()}
-              type="button"
-            >
-              {t("generateInviteCode")}
-            </button>
-            {inviteLive ? (
-              <div className="invite-result" role="status">
-                <strong id="invite-code-display">{inviteLive.code}</strong>
-                <span>
-                  {t("inviteValidFor", {
-                    duration: formatRelativeDuration(inviteLive.expiresAt)
-                  })}
-                </span>
-                <button
-                  className="secondary-button"
-                  id="copy-invite"
-                  onClick={() => void copyInvite()}
-                  type="button"
-                >
-                  {copied ? t("inviteCodeCopied") : t("copyInviteCode")}
-                </button>
-              </div>
-            ) : null}
           </div>
         ) : (
-          <form className="square-join invite-join" onSubmit={submitJoin}>
-            {joinStep === "code" ? (
-              <>
-                <label htmlFor="invite-code">{t("inviteCode")}</label>
-                <input
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  id="invite-code"
-                  onChange={(event) => setCode(event.target.value)}
-                  value={code}
-                />
-                <button
-                  className="primary-button"
-                  disabled={!code.trim()}
-                  id="join-continue"
-                  type="submit"
-                >
-                  {t("continueAction")}
-                </button>
-              </>
-            ) : (
-              <>
-                <label htmlFor="member-name">{t("displayName")}</label>
-                <input
-                  autoComplete="off"
-                  id="member-name"
-                  maxLength={24}
-                  onChange={(event) => setNameInput(event.target.value)}
-                  value={nameInput}
-                />
-                <button
-                  className="primary-button"
-                  disabled={joining || !nameInput.trim()}
-                  id="join-button"
-                  type="submit"
-                >
-                  {t("joinChat")}
-                </button>
-              </>
-            )}
-            {joinError ? (
+          <form className="square-join invite-join" onSubmit={submitLogin}>
+            <label htmlFor="sandal-password">{t("passwordLabel")}</label>
+            <input
+              autoComplete="current-password"
+              id="sandal-password"
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              value={password}
+            />
+            <button
+              className="primary-button"
+              disabled={busy || !password}
+              id="login-button"
+              type="submit"
+            >
+              {t("loginAction")}
+            </button>
+            {error ? (
               <p className="error-text" role="alert">
-                {joinError}
+                {error}
               </p>
             ) : null}
           </form>
@@ -1446,6 +1449,15 @@ function InvitePage() {
 
 export function App() {
   const route = roomPathname();
+  useEffect(() => {
+    // The standalone /invite page was removed; send its visitors home.
+    if (window.location.pathname === "/invite") {
+      window.location.replace("/");
+    }
+  }, []);
+  if (window.location.pathname === "/invite") {
+    return null;
+  }
   useEffect(() => {
     const previousLanguage = document.documentElement.lang;
     // Marketing articles are English; the landing and room UI use the catalog locale.
@@ -1465,8 +1477,8 @@ export function App() {
   if (route.view === "square") {
     return <SquarePage />;
   }
-  if (route.view === "invite") {
-    return <InvitePage />;
+  if (route.view === "ensaluti") {
+    return <EnsalutiPage />;
   }
   return <LandingPage />;
 }

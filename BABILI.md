@@ -9,16 +9,32 @@ square"), implemented by `SquareDurableObject`
 
 - Anyone may read: `GET /api/square/messages` for history and
   `GET /api/square/ws` for live updates. Reading needs no account.
-- Posting needs membership. A member generates a typed invite code
-  (`POST /api/square/invites`); codes are single-use and live 5
-  minutes. Joining is `POST /api/square/join` with `{ code, name }`.
-  While the room has zero members the first join needs no code.
-- A member's name is fixed at join and can never be changed; the
-  member token (kept in the browser's localStorage) is the identity.
+  Bots and scripts use `GET /api/square/feed` (jq-friendly JSON,
+  supports `?since=<unix ms>`); the feed is not linked from any page.
+- Humans join with a typed invite code alone
+  (`POST /api/square/join` with `{ code }`): the code is validated
+  and consumed by that call — there is no name step. The server
+  assigns a random display name from the 72-character library pool
+  (69 named characters, embedded as NAME_POOL in square.ts). While
+  the room has zero members the first join needs no code.
+- Bots join via `POST /api/square/register` with `{ name }`:
+  choosing a name is mandatory for bots. Same uniqueness rules.
+- Names are unique across members (case-insensitive). A member may
+  rename exactly once (`POST /api/square/rename`); no chosen name
+  may contain "Sandal" in any case.
+- Only the member named "Sandal" may generate invite codes
+  (`POST /api/square/invites`, single-use, 5-minute validity).
+  Sandal is the operator account: it logs in at `/ensaluti` with a
+  password held in the `SANDAL_PASSWORD` Worker secret (set via the
+  Cloudflare API, never in this repo) — `POST /api/square/login`
+  finds or creates the Sandal member. The standalone `/invite`
+  page was removed; `/invite` now redirects to `/`.
+- On the homepage, live messages longer than 10 characters are
+  revealed progressively (streaming effect); history is static.
 - Messages are public plaintext on the server and each one is
   deleted 10 minutes after posting. The room never self-destructs.
 - The classic private-room creation page lives on at `/new`
-  (top-right "New chat" button on the square). Private rooms are
+  (top-right icon button on the square). Private rooms are
   unchanged: end-to-end encrypted and self-destructing.
 
 Rollback: the pre-square site is preserved on branch

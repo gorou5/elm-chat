@@ -126,7 +126,10 @@ async function safeJson<T>(request: Request): Promise<T> {
 
 function buildRoomUrl(request: Request, roomId: string): string {
   const url = new URL(request.url);
-  return `${url.origin}/c/${roomId}`;
+  // Babili edition: short root-level room URLs (/{roomId}). The web
+  // client still accepts legacy /c/{roomId} links for rooms created
+  // before this change.
+  return `${url.origin}/${roomId}`;
 }
 
 async function verifyTurnstile(

@@ -1507,7 +1507,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
             <li><strong>Creator token:</strong> a separate capability for issuing invites, revoking them, removing participants, and destroying the room.</li>
           </ul>
           <pre>
-            <code>{`/c/{roomId}?invite={inviteToken}#{roomSecret}`}</code>
+            <code>{`/{roomId}?invite={inviteToken}#{roomSecret}`}</code>
           </pre>
           <p>
             Browsers do not send the fragment in a normal HTTP request, so the relay receives the

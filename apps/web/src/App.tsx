@@ -134,6 +134,13 @@ function roomPathname(): { view: View; roomId?: string; marketingSlug?: Marketin
   if (match) {
     return { view: "room", roomId: match[1] };
   }
+  // Babili edition: short room URLs live at the root (/{8-char id}).
+  // No marketing slug is a bare 8-character token, so this cannot
+  // shadow a content page.
+  const shortMatch = window.location.pathname.match(/^\/([A-Za-z0-9_-]{8})$/);
+  if (shortMatch) {
+    return { view: "room", roomId: shortMatch[1] };
+  }
   const marketingSlug = window.location.pathname.replace(/^\/|\/$/g, "");
   if (isMarketingAcquisitionSource(marketingSlug)) {
     return { view: "marketing", marketingSlug };
@@ -611,7 +618,7 @@ function inviteStatusLabel(invite: RoomInvite): string {
 }
 
 function buildInviteUrl(roomId: string, inviteToken: string, roomSecret: string): string {
-  return `${window.location.origin}/c/${roomId}?invite=${encodeURIComponent(inviteToken)}#${roomSecret}`;
+  return `${window.location.origin}/${roomId}?invite=${encodeURIComponent(inviteToken)}#${roomSecret}`;
 }
 
 function roomStateMessage(status: RoomMetadata["status"], reason?: string): string {
@@ -928,6 +935,29 @@ function LandingPage() {
 
   return (
     <main className="landing-shell">
+      <header className="landing-header">
+        <p className="hero-brand">
+          <span className="hero-brand-name">elm chat</span>
+          <span className="hero-brand-meaning">
+            <span className="hero-brand-separator" aria-hidden="true">·</span>
+            {t("nameMeaning")}
+          </span>
+        </p>
+        <div className="hero-links" aria-label={t("learnAbout")}>
+          <a className="hero-link" href={whyUseUrl} rel="noreferrer" target="_blank">
+            {t("whyUse")}
+          </a>
+          <a className="hero-link" href={articleUrl} rel="noreferrer" target="_blank">
+            {t("readArticle")}
+          </a>
+          <a className="hero-link" href="/press">
+            {t("pressKit")}
+          </a>
+          <a className="hero-link" href="/security-and-limitations">
+            {t("securityStatus")}
+          </a>
+        </div>
+      </header>
       <section className="hero">
         <div className="hero-copy">
           {externalSource === "freshcode" ? (
@@ -955,27 +985,6 @@ function LandingPage() {
               </div>
             </aside>
           ) : null}
-          <p className="hero-brand">
-            <span className="hero-brand-name">elm chat</span>
-            <span className="hero-brand-meaning">
-              <span className="hero-brand-separator" aria-hidden="true">·</span>
-              {t("nameMeaning")}
-            </span>
-          </p>
-          <div className="hero-links" aria-label={t("learnAbout")}>
-            <a className="hero-link" href={whyUseUrl} rel="noreferrer" target="_blank">
-              {t("whyUse")}
-            </a>
-            <a className="hero-link" href={articleUrl} rel="noreferrer" target="_blank">
-              {t("readArticle")}
-            </a>
-            <a className="hero-link" href="/press">
-              {t("pressKit")}
-            </a>
-            <a className="hero-link" href="/security-and-limitations">
-              {t("securityStatus")}
-            </a>
-          </div>
           <h1>{t("heroTitle")}</h1>
           <p className="lede">
             {t("heroCopy")}
@@ -1102,55 +1111,6 @@ function LandingPage() {
           {error ? <p className="error-text">{error}</p> : null}
         </div>
         <div className="hero-panel">
-          <div className="signal-grid" />
-          <div className="hero-panel-top">
-          <a
-            className="github-cta"
-            href={GITHUB_URL}
-            onClick={() =>
-              recordGrowthEvent("github_star_clicked", externalSource ?? undefined)
-            }
-            rel="noreferrer"
-            target="_blank"
-          >
-            <GithubMark size={22} />
-            <span className="github-cta-copy">
-              <strong>{t("githubHeadline")}</strong>
-              <span>{t("githubCopy")}</span>
-            </span>
-            <span className="github-cta-stats" aria-label={t("githubStats")}>
-              {ghStats.stars !== null ? (
-                <span className="github-stat">
-                  <span aria-hidden="true">★</span> {formatCount(ghStats.stars)}
-                </span>
-              ) : null}
-              {ghStats.forks !== null ? (
-                <span className="github-stat">
-                  <span aria-hidden="true">⑂</span> {formatCount(ghStats.forks)}
-                </span>
-              ) : null}
-            </span>
-          </a>
-          <div className="github-links" aria-label={t("projectSource")}>
-            <a className="github-mini" href={SOURCE_URL} rel="noreferrer" target="_blank">
-              <GithubMark size={13} /> {t("viewSource")}
-            </a>
-            <a className="github-mini" href={`${SOURCE_URL}/fork`} rel="noreferrer" target="_blank">
-              {t("forkMe")}
-            </a>
-            <a
-              className="github-mini"
-              href={`${GITHUB_URL}/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22`}
-              onClick={() =>
-                recordGrowthEvent("good_first_issue_clicked", externalSource ?? undefined)
-              }
-              rel="noreferrer"
-              target="_blank"
-            >
-              {t("starterIssue")}
-            </a>
-          </div>
-          </div>
           <div className="github-community" aria-label={t("communityTitle")}>
             <div className="community-section">
               <div className="community-heading">
@@ -1211,6 +1171,27 @@ function LandingPage() {
           </div>
         </div>
       </section>
+      <footer className="landing-footer">
+        <div className="footer-left">
+          <a className="footer-source" href={SOURCE_URL} rel="noreferrer" target="_blank">
+            <GithubMark size={16} />
+            <span>{t("viewSource")} · github.com/gorou5/elm-chat</span>
+          </a>
+          <a className="footer-upstream" href={GITHUB_URL} rel="noreferrer" target="_blank">
+            {t("upstreamSource")} · github.com/shawnbure/elm-chat
+          </a>
+          <a className="footer-license" href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noreferrer" target="_blank">
+            AGPL-3.0
+          </a>
+          {ghStats.stars !== null ? (
+            <span className="footer-stat"><span aria-hidden="true">★</span> {formatCount(ghStats.stars)}</span>
+          ) : null}
+          {ghStats.forks !== null ? (
+            <span className="footer-stat"><span aria-hidden="true">⑂</span> {formatCount(ghStats.forks)}</span>
+          ) : null}
+        </div>
+        <span className="footer-note">babili.datumoj.com</span>
+      </footer>
     </main>
   );
 }

@@ -1,5 +1,10 @@
 export const ROOM_SECRET_BYTES = 32;
-export const ROOM_ID_BYTES = 16;
+// Babili edition: 6 random bytes encode to exactly 8 base64url
+// characters, giving short room URLs (babili.datumoj.com/xxxxxxxx).
+// The room secret (32 bytes, URL fragment) and single-use invite
+// tokens remain the actual access credentials; the ID only names
+// the room, and 48 bits keeps enumeration impractical.
+export const ROOM_ID_BYTES = 6;
 export const AES_GCM_NONCE_BYTES = 12;
 export const KEY_VERSION = "v1";
 export const MESSAGE_PROTOCOL_VERSION = 3;

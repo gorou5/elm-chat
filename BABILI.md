@@ -47,6 +47,22 @@ Local changes vs upstream (branch `babili`):
    requires offering the source of the modified version actually
    running. Upstream links remain where they describe upstream
    (star counts, community issues, releases, deploy-your-own).
+6. Short room URLs (2026-11-03): `ROOM_ID_BYTES` 16 -> 6, so room
+   IDs are exactly 8 base64url characters and room/invite URLs are
+   root-level (`babili.datumoj.com/xxxxxxxx`) instead of
+   `/c/{22-char id}`. The client still routes legacy `/c/{id}`
+   links. Access control is unchanged: the 32-byte room secret in
+   the URL fragment and single-use invite tokens are the
+   credentials; the shorter ID only names the room.
+7. Landing page restyled after shadcn/ui (2026-11-03): zinc
+   tokens, flat cards, small radius, zinc-900 primary button —
+   implemented as a scoped override section at the end of
+   `apps/web/src/styles.css` (`.landing-shell ...`) without adding
+   Tailwind/Radix, so upstream merges stay manageable and the room
+   UI keeps the upstream theme. Layout: brand + nav moved to a top
+   header; the GitHub block moved out of the hero panel into a
+   page footer, bottom-left (this fork's source first, upstream
+   second, plus the AGPL-3.0 license link and star/fork counts).
 
 Redeploy (automatic, since 2026-11-03):
 

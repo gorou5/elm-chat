@@ -2209,3 +2209,10 @@ select {
   flex: none;
   width: 100%;
 }
+
+.square-shell .square-new-chat {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  padding: 8px 10px;
+}

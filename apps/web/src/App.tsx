@@ -739,6 +739,26 @@ function GithubMark({ size = 16 }: { size?: number }) {
   );
 }
 
+function NewChatIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <path d="M12 7v6" />
+      <path d="M9 10h6" />
+    </svg>
+  );
+}
+
 function FileCard({ file, onDownload }: { file: UiFile; onDownload: () => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const progress = file.progress ?? 0;
@@ -1094,8 +1114,24 @@ function SquarePage() {
               </button>
             </>
           ) : null}
-          <a className="primary-button" href="/new" id="create-chat">
-            {t("createChat")}
+          <a
+            aria-label={t("viewSource")}
+            className="footer-source"
+            href={SOURCE_URL}
+            rel="noreferrer"
+            target="_blank"
+            title={t("viewSource")}
+          >
+            <GithubMark size={20} />
+          </a>
+          <a
+            aria-label={t("createChat")}
+            className="primary-button square-new-chat"
+            href="/new"
+            id="create-chat"
+            title={t("createChat")}
+          >
+            <NewChatIcon />
           </a>
         </div>
       </header>
@@ -1133,16 +1169,6 @@ function SquarePage() {
         </p>
       ) : null}
       <footer className="square-dock">
-        <a
-          aria-label={t("viewSource")}
-          className="footer-source"
-          href={SOURCE_URL}
-          rel="noreferrer"
-          target="_blank"
-          title={t("viewSource")}
-        >
-          <GithubMark size={20} />
-        </a>
         {member ? (
           <form className="square-composer" onSubmit={submitMessage}>
             <input

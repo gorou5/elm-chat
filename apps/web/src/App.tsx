@@ -861,6 +861,14 @@ type SquareMessageItem = {
 };
 
 const SQUARE_MEMBER_KEY = "babili:square:member";
+const SQUARE_QUARTER_MS = 15 * 60 * 1000;
+const tokyoClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Tokyo",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false
+});
 
 type SquareMember = {
   token: string;
@@ -945,6 +953,18 @@ function SquarePage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // Local mirror of the server wipe: when a quarter hour rolls over,
+  // clear the visible log even if the "clear" frame was missed.
+  const quarterRef = useRef(Math.floor(Date.now() / SQUARE_QUARTER_MS));
+  useEffect(() => {
+    const quarter = Math.floor(now / SQUARE_QUARTER_MS);
+    if (quarter !== quarterRef.current) {
+      quarterRef.current = quarter;
+      staticIdsRef.current = new Set();
+      setMessages([]);
+    }
+  }, [now]);
+
   useEffect(() => {
     if (!memberToken) return;
     let cancelled = false;
@@ -1025,6 +1045,10 @@ function SquarePage() {
             primeStatic(payload.messages);
             setMessages(payload.messages);
           }
+          if (payload.type === "clear") {
+            staticIdsRef.current = new Set();
+            setMessages([]);
+          }
           if (payload.type === "message" && payload.message) {
             appendMessage(payload.message);
           }
@@ -1061,6 +1085,7 @@ function SquarePage() {
 
   const visibleMessages = messages.filter((message) => message.expiresAt > now);
   const dockError = renaming ? renameError : member ? sendError : joinError;
+  const msToBoundary = SQUARE_QUARTER_MS - (now % SQUARE_QUARTER_MS);
 
   // The invite code is judged by this call alone: valid code, and the
   // visitor is a member under a server-assigned name. No name form.
@@ -1209,6 +1234,13 @@ function SquarePage() {
         <div className="square-brand">
           <span className="square-brand-name">Babili</span>
           <span className="square-brand-sub">论巴别塔的倒掉</span>
+        </div>
+        <div
+          className={`square-clock${msToBoundary <= 10000 ? " square-clock--alert" : ""}`}
+          id="square-clock"
+          role="timer"
+        >
+          {tokyoClock.format(now)}
         </div>
         <div className="square-actions">
           {member ? (

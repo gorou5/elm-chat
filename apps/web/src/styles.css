@@ -2235,3 +2235,35 @@ select {
   padding: 0 10px;
   width: 150px;
 }
+
+.square-header {
+  position: relative;
+}
+
+.square-clock {
+  border-radius: 6px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  left: 50%;
+  padding: 2px 8px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.square-clock--alert {
+  animation: square-clock-flash 0.5s linear infinite;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+@keyframes square-clock-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

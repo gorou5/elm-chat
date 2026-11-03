@@ -23,6 +23,10 @@ import { DurableObject } from "cloudflare:workers";
 // - The room itself never self-destructs: no expiry, no destroy API.
 
 const MESSAGE_TTL_MS = 10 * 60 * 1000;
+// The whole log is wiped at fixed quarter hours (:00/:15/:30/:45).
+// Tokyo is UTC+9 with no DST and 9h is a whole number of quarters,
+// so epoch quarter boundaries are exactly Tokyo quarter hours.
+const QUARTER_MS = 15 * 60 * 1000;
 const INVITE_TTL_MS = 5 * 60 * 1000;
 const MAX_MESSAGES_KEPT = 200;
 const MAX_TEXT_LENGTH = 500;
@@ -182,6 +186,28 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     }
   }
 
+  private nextQuarterBoundary(from: number): number {
+    return (Math.floor(from / QUARTER_MS) + 1) * QUARTER_MS;
+  }
+
+  private alarmTarget = 0;
+
+  private async ensureAlarm(): Promise<void> {
+    const target = this.nextQuarterBoundary(Date.now());
+    if (this.alarmTarget !== target) {
+      this.alarmTarget = target;
+      await this.ctx.storage.setAlarm(target);
+    }
+  }
+
+  async alarm(): Promise<void> {
+    // Fixed-time wipe: every message goes, whatever its own TTL said.
+    this.messages = [];
+    await this.ctx.storage.put(MESSAGES_KEY, this.messages);
+    this.broadcast({ type: "clear" });
+    await this.ensureAlarm();
+  }
+
   private memberFor(request: Request, body?: { token?: string }): Member | null {
     const token =
       body?.token ??
@@ -256,6 +282,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const now = Date.now();
+    await this.ensureAlarm();
 
     if (request.method === "GET" && url.pathname === "/api/square/ws") {
       if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {

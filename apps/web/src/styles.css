@@ -2109,3 +2109,103 @@ select {
     padding-right: 16px;
   }
 }
+
+/* ---- Babili invite page (/invite, unlinked) ---- */
+.invite-shell {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --primary: #18181b;
+  --muted-foreground: #71717a;
+  align-items: center;
+  background: var(--background);
+  box-sizing: border-box;
+  color: var(--foreground);
+  display: flex;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+
+.invite-shell .primary-button {
+  background: var(--primary);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.12);
+  color: #fafafa;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 9px 16px;
+}
+
+.invite-shell .primary-button:hover {
+  background: #27272a;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.12);
+  transform: none;
+}
+
+.invite-shell .secondary-button {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 14px;
+}
+
+.invite-shell .secondary-button:hover {
+  background: #fafafa;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.05);
+  transform: none;
+}
+
+.invite-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 420px;
+  padding: 24px;
+  width: 100%;
+}
+
+.invite-panel {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.invite-result {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite-result strong {
+  font-size: 32px;
+  letter-spacing: 0.18em;
+}
+
+.invite-result span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.invite-join {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.invite-join input {
+  flex: none;
+  width: 100%;
+}

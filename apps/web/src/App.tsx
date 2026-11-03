@@ -55,7 +55,7 @@ import { useConversationScroll } from "./use-conversation-scroll";
 import { useConversationFind } from "./use-conversation-find";
 import { useConversationConcealment } from "./use-conversation-concealment";
 
-type View = "landing" | "marketing" | "room" | "square" | "create";
+type View = "landing" | "marketing" | "room" | "square" | "create" | "invite";
 
 type FileTransferState =
   | "offered"
@@ -125,6 +125,11 @@ function roomPathname(): { view: View; roomId?: string; marketingSlug?: Marketin
   }
   if (window.location.pathname === "/new") {
     return { view: "create" };
+  }
+  // Standalone invite-code page. Deliberately not linked from the
+  // homepage; it is reached by its direct URL only.
+  if (window.location.pathname === "/invite") {
+    return { view: "invite" };
   }
   const match = window.location.pathname.match(/^\/c\/([^/]+)$/);
   if (match) {
@@ -1201,6 +1206,218 @@ function SquarePage() {
   );
 }
 
+function InvitePage() {
+  const [member, setMember] = useState<{ token: string; name: string } | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(SQUARE_MEMBER_KEY);
+      return raw ? (JSON.parse(raw) as { token: string; name: string }) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [joinStep, setJoinStep] = useState<"code" | "name">("code");
+  const [code, setCode] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const memberToken = member?.token ?? null;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!memberToken) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/square/me", {
+          headers: { "x-member-token": memberToken }
+        });
+        if (!response.ok && !cancelled) {
+          window.localStorage.removeItem(SQUARE_MEMBER_KEY);
+          setMember(null);
+        }
+      } catch {
+        // Transient failure: keep the stored membership.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberToken]);
+
+  const submitJoin = async (event: FormEvent) => {
+    event.preventDefault();
+    if (joinStep === "code") {
+      setJoinError(null);
+      setJoinStep("name");
+      return;
+    }
+    const name = nameInput.trim();
+    if (!name) {
+      setJoinError(t("invalidName"));
+      return;
+    }
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const response = await fetch("/api/square/join", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: code.trim(), name })
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        token?: string;
+        name?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.token || !data.name) {
+        setJoinError(
+          data.error === "invalid_code"
+            ? t("invalidInviteCode")
+            : data.error === "name_taken"
+              ? t("nameTaken")
+              : data.error === "rate_limited"
+                ? t("squareRateLimited")
+                : t("joinFailed")
+        );
+        if (data.error === "invalid_code") setJoinStep("code");
+        return;
+      }
+      const next = { token: data.token, name: data.name };
+      window.localStorage.setItem(SQUARE_MEMBER_KEY, JSON.stringify(next));
+      setMember(next);
+    } catch {
+      setJoinError(t("joinFailed"));
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const generateInvite = async () => {
+    if (!member) return;
+    try {
+      const response = await fetch("/api/square/invites", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: member.token })
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { code: string; expiresAt: number };
+      setInvite(data);
+      setCopied(false);
+    } catch {
+      // Keep any previous code on screen.
+    }
+  };
+
+  const copyInvite = async () => {
+    if (!invite) return;
+    try {
+      await navigator.clipboard.writeText(invite.code);
+      setCopied(true);
+    } catch {
+      // Clipboard unavailable (permissions): the code stays visible to copy by hand.
+    }
+  };
+
+  const inviteLive = invite && invite.expiresAt > now ? invite : null;
+
+  return (
+    <main className="invite-shell">
+      <section className="invite-card">
+        <div className="square-brand">
+          <span className="square-brand-name">Babili</span>
+          <span className="square-brand-sub">论巴别塔的倒掉</span>
+        </div>
+        {member ? (
+          <div className="invite-panel">
+            <span className="square-member-name">{member.name}</span>
+            <button
+              className="primary-button"
+              id="generate-invite"
+              onClick={() => void generateInvite()}
+              type="button"
+            >
+              {t("generateInviteCode")}
+            </button>
+            {inviteLive ? (
+              <div className="invite-result" role="status">
+                <strong id="invite-code-display">{inviteLive.code}</strong>
+                <span>
+                  {t("inviteValidFor", {
+                    duration: formatRelativeDuration(inviteLive.expiresAt)
+                  })}
+                </span>
+                <button
+                  className="secondary-button"
+                  id="copy-invite"
+                  onClick={() => void copyInvite()}
+                  type="button"
+                >
+                  {copied ? t("inviteCodeCopied") : t("copyInviteCode")}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <form className="square-join invite-join" onSubmit={submitJoin}>
+            {joinStep === "code" ? (
+              <>
+                <label htmlFor="invite-code">{t("inviteCode")}</label>
+                <input
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  id="invite-code"
+                  onChange={(event) => setCode(event.target.value)}
+                  value={code}
+                />
+                <button
+                  className="primary-button"
+                  disabled={!code.trim()}
+                  id="join-continue"
+                  type="submit"
+                >
+                  {t("continueAction")}
+                </button>
+              </>
+            ) : (
+              <>
+                <label htmlFor="member-name">{t("displayName")}</label>
+                <input
+                  autoComplete="off"
+                  id="member-name"
+                  maxLength={24}
+                  onChange={(event) => setNameInput(event.target.value)}
+                  value={nameInput}
+                />
+                <button
+                  className="primary-button"
+                  disabled={joining || !nameInput.trim()}
+                  id="join-button"
+                  type="submit"
+                >
+                  {t("joinChat")}
+                </button>
+              </>
+            )}
+            {joinError ? (
+              <p className="error-text" role="alert">
+                {joinError}
+              </p>
+            ) : null}
+          </form>
+        )}
+      </section>
+    </main>
+  );
+}
+
 export function App() {
   const route = roomPathname();
   useEffect(() => {
@@ -1221,6 +1438,9 @@ export function App() {
   }
   if (route.view === "square") {
     return <SquarePage />;
+  }
+  if (route.view === "invite") {
+    return <InvitePage />;
   }
   return <LandingPage />;
 }

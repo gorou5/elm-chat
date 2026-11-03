@@ -10,6 +10,9 @@ import { DurableObject } from "cloudflare:workers";
 //   validity). The code is judged the moment it is submitted; there
 //   is no name form. The server assigns a random display name from
 //   the 72-character library pool (NAME_POOL below).
+// - Guest memberships expire 24 hours after joining, humans and
+//   bots alike; expired names return to the pool. The Sandal
+//   operator account never expires.
 // - Bots join through /api/square/register and MUST choose their own
 //   name there. Same uniqueness rules.
 // - A member may rename exactly once. No member name may contain
@@ -23,6 +26,10 @@ import { DurableObject } from "cloudflare:workers";
 // - The room itself never self-destructs: no expiry, no destroy API.
 
 const MESSAGE_TTL_MS = 10 * 60 * 1000;
+// Guest memberships (invite-code humans and registered bots alike)
+// expire 24 hours after joining. The Sandal operator account does
+// not expire.
+const MEMBER_TTL_MS = 24 * 60 * 60 * 1000;
 // The whole log is wiped at fixed quarter hours (:00/:15/:30/:45).
 // Tokyo is UTC+9 with no DST and 9h is a whole number of quarters,
 // so epoch quarter boundaries are exactly Tokyo quarter hours.
@@ -76,6 +83,8 @@ type Member = {
   joinedAt: number;
   kind: MemberKind;
   renamed: boolean;
+  // Null for the operator account, which never expires.
+  expiresAt: number | null;
 };
 type Invite = { expiresAt: number; createdBy: string };
 type Failures = { count: number; windowStart: number; lockedUntil: number };
@@ -129,15 +138,21 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       const storedMembers =
         (await this.ctx.storage.get<[string, Member][]>(MEMBERS_KEY)) ?? [];
       this.members = new Map(
-        storedMembers.map(([token, member]) => [
-          token,
-          {
-            name: member.name,
-            joinedAt: member.joinedAt,
-            kind: member.kind ?? "code",
-            renamed: member.renamed ?? false
-          }
-        ])
+        storedMembers.map(([token, member]) => {
+          const kind = member.kind ?? "code";
+          return [
+            token,
+            {
+              name: member.name,
+              joinedAt: member.joinedAt,
+              kind,
+              renamed: member.renamed ?? false,
+              expiresAt:
+                member.expiresAt ??
+                (kind === "owner" ? null : member.joinedAt + MEMBER_TTL_MS)
+            }
+          ] as [string, Member];
+        })
       );
       this.messages =
         (await this.ctx.storage.get<SquareMessage[]>(MESSAGES_KEY)) ?? [];
@@ -214,7 +229,27 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       request.headers.get("x-member-token") ??
       new URL(request.url).searchParams.get("token") ??
       "";
-    return token ? (this.members.get(token) ?? null) : null;
+    if (!token) return null;
+    const member = this.members.get(token);
+    if (!member) return null;
+    if (member.expiresAt !== null && member.expiresAt <= Date.now()) {
+      this.members.delete(token);
+      return null;
+    }
+    return member;
+  }
+
+  private async pruneExpiredMembers(now: number): Promise<void> {
+    let removed = false;
+    for (const [token, member] of this.members) {
+      if (member.expiresAt !== null && member.expiresAt <= now) {
+        this.members.delete(token);
+        removed = true;
+      }
+    }
+    if (removed) {
+      await this.ctx.storage.put(MEMBERS_KEY, [...this.members.entries()]);
+    }
   }
 
   private tokenFor(request: Request, body?: { token?: string }): string {
@@ -271,11 +306,13 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     name: string;
     renamed: boolean;
     canInvite: boolean;
+    expiresAt: number | null;
   } {
     return {
       name: member.name,
       renamed: member.renamed,
-      canInvite: member.name === OWNER_NAME
+      canInvite: member.name === OWNER_NAME,
+      expiresAt: member.expiresAt
     };
   }
 
@@ -283,6 +320,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     const url = new URL(request.url);
     const now = Date.now();
     await this.ensureAlarm();
+    await this.pruneExpiredMembers(now);
 
     if (request.method === "GET" && url.pathname === "/api/square/ws") {
       if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
@@ -365,7 +403,8 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         name: OWNER_NAME,
         joinedAt: now,
         kind: "owner",
-        renamed: true
+        renamed: true,
+        expiresAt: null
       };
       this.members.set(token, member);
       await this.persist();
@@ -403,7 +442,8 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         name: this.assignPoolName(),
         joinedAt: now,
         kind: "code",
-        renamed: false
+        renamed: false,
+        expiresAt: now + MEMBER_TTL_MS
       };
       this.members.set(token, member);
       await this.persist();
@@ -435,7 +475,8 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         name,
         joinedAt: now,
         kind: "bot",
-        renamed: false
+        renamed: false,
+        expiresAt: now + MEMBER_TTL_MS
       };
       this.members.set(token, member);
       await this.persist();

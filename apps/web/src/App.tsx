@@ -40,7 +40,7 @@ import {
   type RoomMetadata,
   type ServerEvent,
 } from "@elm-chat/shared";
-import { startTransition, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { recordGrowthEvent, resolveExternalAcquisitionSource } from "./growth";
 import { MarketingPage, type MarketingSlug } from "./MarketingPage";
 import { locale, t } from "./localization";
@@ -55,7 +55,7 @@ import { useConversationScroll } from "./use-conversation-scroll";
 import { useConversationFind } from "./use-conversation-find";
 import { useConversationConcealment } from "./use-conversation-concealment";
 
-type View = "landing" | "marketing" | "room";
+type View = "landing" | "marketing" | "room" | "square" | "create";
 
 type FileTransferState =
   | "offered"
@@ -118,6 +118,14 @@ type InviteDurationDraft = {
 type DurationKind = "message" | "room";
 
 function roomPathname(): { view: View; roomId?: string; marketingSlug?: MarketingSlug } {
+  // Babili square: the homepage is the permanent public chat; the
+  // classic private-room creation page moved to /new.
+  if (window.location.pathname === "/") {
+    return { view: "square" };
+  }
+  if (window.location.pathname === "/new") {
+    return { view: "create" };
+  }
   const match = window.location.pathname.match(/^\/c\/([^/]+)$/);
   if (match) {
     return { view: "room", roomId: match[1] };
@@ -819,6 +827,380 @@ function RoomGoneScreen({ fromInvite, reason, focusRef }: { fromInvite: boolean;
   );
 }
 
+type SquareMessageItem = {
+  id: string;
+  name: string;
+  text: string;
+  ts: number;
+  expiresAt: number;
+};
+
+const SQUARE_MEMBER_KEY = "babili:square:member";
+
+function SquarePage() {
+  const [messages, setMessages] = useState<SquareMessageItem[]>([]);
+  const [member, setMember] = useState<{ token: string; name: string } | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(SQUARE_MEMBER_KEY);
+      return raw ? (JSON.parse(raw) as { token: string; name: string }) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [joinStep, setJoinStep] = useState<"code" | "name">("code");
+  const [code, setCode] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const logRef = useRef<HTMLOListElement | null>(null);
+  const stickRef = useRef(true);
+  const memberToken = member?.token ?? null;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/square/state");
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as { requiresCode: boolean };
+        if (!data.requiresCode && !cancelled) setJoinStep("name");
+      } catch {
+        // Default stays on the code step.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!memberToken) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/square/me", {
+          headers: { "x-member-token": memberToken }
+        });
+        if (!response.ok && !cancelled) {
+          window.localStorage.removeItem(SQUARE_MEMBER_KEY);
+          setMember(null);
+        }
+      } catch {
+        // Transient failure: keep the stored membership.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let socket: WebSocket | null = null;
+    let retry: number | undefined;
+    const appendMessage = (incoming: SquareMessageItem) => {
+      setMessages((previous) =>
+        previous.some((item) => item.id === incoming.id) ? previous : [...previous, incoming]
+      );
+    };
+    const loadHistory = async () => {
+      try {
+        const response = await fetch("/api/square/messages");
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as { messages: SquareMessageItem[] };
+        if (!cancelled) setMessages(data.messages);
+      } catch {
+        // The socket sync below covers the history.
+      }
+    };
+    const connect = () => {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      socket = new WebSocket(`${protocol}//${window.location.host}/api/square/ws`);
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(String(event.data)) as {
+            type: string;
+            messages?: SquareMessageItem[];
+            message?: SquareMessageItem;
+          };
+          if (payload.type === "sync" && payload.messages) {
+            setMessages(payload.messages);
+          }
+          if (payload.type === "message" && payload.message) {
+            appendMessage(payload.message);
+          }
+        } catch {
+          // Ignore malformed frames.
+        }
+      };
+      socket.onclose = () => {
+        if (!cancelled) retry = window.setTimeout(connect, 3000);
+      };
+      socket.onerror = () => {
+        try {
+          socket?.close();
+        } catch {
+          // Already closed.
+        }
+      };
+    };
+    void loadHistory();
+    connect();
+    return () => {
+      cancelled = true;
+      if (retry !== undefined) window.clearTimeout(retry);
+      socket?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const log = logRef.current;
+    if (log && stickRef.current) {
+      log.scrollTop = log.scrollHeight;
+    }
+  }, [messages]);
+
+  const visibleMessages = messages.filter((message) => message.expiresAt > now);
+  const dockError = member ? sendError : joinError;
+
+  const submitJoin = async (event: FormEvent) => {
+    event.preventDefault();
+    if (joinStep === "code") {
+      setJoinError(null);
+      setJoinStep("name");
+      return;
+    }
+    const name = nameInput.trim();
+    if (!name) {
+      setJoinError(t("invalidName"));
+      return;
+    }
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const response = await fetch("/api/square/join", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: code.trim(), name })
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        token?: string;
+        name?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.token || !data.name) {
+        setJoinError(
+          data.error === "invalid_code"
+            ? t("invalidInviteCode")
+            : data.error === "name_taken"
+              ? t("nameTaken")
+              : data.error === "rate_limited"
+                ? t("squareRateLimited")
+                : t("joinFailed")
+        );
+        if (data.error === "invalid_code") setJoinStep("code");
+        return;
+      }
+      const next = { token: data.token, name: data.name };
+      window.localStorage.setItem(SQUARE_MEMBER_KEY, JSON.stringify(next));
+      setMember(next);
+    } catch {
+      setJoinError(t("joinFailed"));
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const submitMessage = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!member) return;
+    const text = draft.trim();
+    if (!text) return;
+    setSendError(null);
+    try {
+      const response = await fetch("/api/square/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: member.token, text })
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: SquareMessageItem;
+        error?: string;
+      };
+      if (!response.ok) {
+        setSendError(data.error === "rate_limited" ? t("squareRateLimited") : t("joinFailed"));
+        return;
+      }
+      setDraft("");
+      if (data.message) {
+        const posted = data.message;
+        setMessages((previous) =>
+          previous.some((item) => item.id === posted.id) ? previous : [...previous, posted]
+        );
+      }
+    } catch {
+      setSendError(t("joinFailed"));
+    }
+  };
+
+  const generateInvite = async () => {
+    if (!member) return;
+    try {
+      const response = await fetch("/api/square/invites", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: member.token })
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { code: string; expiresAt: number };
+      setInvite(data);
+    } catch {
+      // The previous code (if any) stays on screen.
+    }
+  };
+
+  return (
+    <main className="square-shell">
+      <header className="square-header">
+        <div className="square-brand">
+          <span className="square-brand-name">Babili</span>
+          <span className="square-brand-sub">论巴别塔的倒掉</span>
+        </div>
+        <div className="square-actions">
+          {member ? (
+            <>
+              <span className="square-member-name">{member.name}</span>
+              <button
+                className="secondary-button"
+                id="generate-invite"
+                onClick={() => void generateInvite()}
+                type="button"
+              >
+                {t("generateInviteCode")}
+              </button>
+            </>
+          ) : null}
+          <a className="primary-button" href="/new" id="create-chat">
+            {t("createChat")}
+          </a>
+        </div>
+      </header>
+      {invite && invite.expiresAt > now ? (
+        <div className="square-invite-bar" role="status">
+          <span>{t("inviteCode")}</span>
+          <strong id="invite-code-display">{invite.code}</strong>
+          <span>{t("inviteValidFor", { duration: formatRelativeDuration(invite.expiresAt) })}</span>
+        </div>
+      ) : null}
+      <ol
+        aria-live="polite"
+        className="square-log"
+        id="chat-log"
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          stickRef.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight < 120;
+        }}
+        ref={logRef}
+      >
+        {visibleMessages.map((message) => (
+          <li className="square-msg" key={message.id}>
+            <span className="square-msg-name">{message.name}</span>
+            <time className="square-msg-time" dateTime={new Date(message.ts).toISOString()}>
+              {formatClock(message.ts)}
+            </time>
+            <p className="square-msg-text">{message.text}</p>
+          </li>
+        ))}
+      </ol>
+      {dockError ? (
+        <p className="error-text square-error" role="alert">
+          {dockError}
+        </p>
+      ) : null}
+      <footer className="square-dock">
+        <a
+          aria-label={t("viewSource")}
+          className="footer-source"
+          href={SOURCE_URL}
+          rel="noreferrer"
+          target="_blank"
+          title={t("viewSource")}
+        >
+          <GithubMark size={20} />
+        </a>
+        {member ? (
+          <form className="square-composer" onSubmit={submitMessage}>
+            <input
+              aria-label={t("writeMessage")}
+              autoComplete="off"
+              id="message-input"
+              maxLength={500}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={t("writeMessage")}
+              value={draft}
+            />
+            <button className="primary-button" disabled={!draft.trim()} id="send-button" type="submit">
+              {t("sendMessage")}
+            </button>
+          </form>
+        ) : (
+          <form className="square-join" onSubmit={submitJoin}>
+            {joinStep === "code" ? (
+              <>
+                <label htmlFor="invite-code">{t("inviteCode")}</label>
+                <input
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  id="invite-code"
+                  onChange={(event) => setCode(event.target.value)}
+                  value={code}
+                />
+                <button
+                  className="primary-button"
+                  disabled={!code.trim()}
+                  id="join-continue"
+                  type="submit"
+                >
+                  {t("continueAction")}
+                </button>
+              </>
+            ) : (
+              <>
+                <label htmlFor="member-name">{t("displayName")}</label>
+                <input
+                  autoComplete="off"
+                  id="member-name"
+                  maxLength={24}
+                  onChange={(event) => setNameInput(event.target.value)}
+                  value={nameInput}
+                />
+                <button
+                  className="primary-button"
+                  disabled={joining || !nameInput.trim()}
+                  id="join-button"
+                  type="submit"
+                >
+                  {t("joinChat")}
+                </button>
+              </>
+            )}
+          </form>
+        )}
+      </footer>
+    </main>
+  );
+}
+
 export function App() {
   const route = roomPathname();
   useEffect(() => {
@@ -836,6 +1218,9 @@ export function App() {
     const sourceParam = new URLSearchParams(window.location.search).get("source");
     const externalSource = resolveExternalAcquisitionSource(sourceParam, document.referrer);
     return <MarketingPage externalSource={externalSource} slug={route.marketingSlug} />;
+  }
+  if (route.view === "square") {
+    return <SquarePage />;
   }
   return <LandingPage />;
 }

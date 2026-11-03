@@ -32,6 +32,10 @@
       {
         "name": "ROOM_OBJECT",
         "class_name": "RoomDurableObject"
+      },
+      {
+        "name": "SQUARE",
+        "class_name": "SquareDurableObject"
       }
     ]
   },
@@ -39,6 +43,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["RoomDurableObject"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["SquareDurableObject"]
     }
   ]
 }

@@ -9,13 +9,15 @@ import {
 } from "@elm-chat/shared";
 import { RoomDurableObject } from "../../../durable-objects/room/src/room";
 import { getCommunityFeed } from "./community";
+import { SquareDurableObject } from "./square";
 
-export { RoomDurableObject };
+export { RoomDurableObject, SquareDurableObject };
 
 type Env = {
   ASSETS: Fetcher;
   GROWTH?: AnalyticsEngineDataset;
   ROOM_OBJECT: DurableObjectNamespace<RoomDurableObject>;
+  SQUARE: DurableObjectNamespace<SquareDurableObject>;
   TURNSTILE_SECRET?: string;
 };
 
@@ -348,6 +350,14 @@ function handleCloudflareDeploy(request: Request, env: Env): Response {
 
 function routeApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+
+  // Babili square: the permanent public room behind the homepage.
+  // One singleton Durable Object owns members, invite codes, and the
+  // rolling 10-minute message history.
+  if (url.pathname.startsWith("/api/square/")) {
+    const stub = env.SQUARE.getByName("babili-square");
+    return stub.fetch(request);
+  }
 
   if (request.method === "POST" && url.pathname === "/api/growth") {
     return safeJson<{ event?: string; source?: string }>(request)

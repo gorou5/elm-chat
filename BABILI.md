@@ -1,5 +1,33 @@
 # babili.datumoj.com — deployment notes
 
+## Square edition (2026-11-03)
+
+The homepage (`/`) is now one permanent public chat room ("the
+square"), implemented by `SquareDurableObject`
+(`workers/api/src/square.ts`, binding `SQUARE`, wrangler migration
+`v2`, singleton name `babili-square`):
+
+- Anyone may read: `GET /api/square/messages` for history and
+  `GET /api/square/ws` for live updates. Reading needs no account.
+- Posting needs membership. A member generates a typed invite code
+  (`POST /api/square/invites`); codes are single-use and live 5
+  minutes. Joining is `POST /api/square/join` with `{ code, name }`.
+  While the room has zero members the first join needs no code.
+- A member's name is fixed at join and can never be changed; the
+  member token (kept in the browser's localStorage) is the identity.
+- Messages are public plaintext on the server and each one is
+  deleted 10 minutes after posting. The room never self-destructs.
+- The classic private-room creation page lives on at `/new`
+  (top-right "New chat" button on the square). Private rooms are
+  unchanged: end-to-end encrypted and self-destructing.
+
+Rollback: the pre-square site is preserved on branch
+`backup/pre-square-v9` (tag `v9-classic`, commit `8a695db`). To
+restore it, push that branch over `babili`
+(`git push --force-with-lease origin backup/pre-square-v9:babili`);
+Workers Builds redeploys the classic site and the `SQUARE`
+binding/migration disappear with the old wrangler config.
+
 This directory is a standalone deployment of upstream elm-chat, kept
 separate from the gorou5/datumoj repository and from every other
 datumoj Worker.

@@ -187,7 +187,9 @@ assert.equal(roomExpiryReason(lifecycle, 1500, 0), "join-timeout");
 assert.equal(roomExpiryReason(lifecycle, 2000, 1), "max-age");
 
 assert.equal(resolveLocale(["es-MX", "en-US"]), "es");
-assert.equal(resolveLocale(["fr-FR"]), "en");
+assert.equal(resolveLocale(["zh-CN", "en-US"]), "zh");
+assert.equal(resolveLocale(["fr-FR"]), "zh");
+assert.equal(translate("zh", "createRoom"), "创建私密对话");
 assert.equal(translate("es", "destroyed").includes("desconectadas"), true);
 assert.equal(translate("en", "roomExpires", { duration: "2m" }), "Room self-destructs in 2m.");
 

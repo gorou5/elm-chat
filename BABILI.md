@@ -31,6 +31,22 @@ Local changes vs upstream (branch `babili`):
 3. Build-time only: `SITE_ORIGIN=https://babili.datumoj.com` so the
    generated sitemap / RSS feed / prerendered pages use this origin
    instead of elm.chat.
+4. Chinese edition (2026-11-03): full Simplified Chinese catalog in
+   `apps/web/src/localization.ts` (`chinese`, locale `zh`); this
+   instance falls back to Chinese when the browser states no
+   supported preference (upstream fallback was English — the two
+   assertions in `scripts/check-message-protocol.mjs` were updated
+   to match, plus zh assertions added). The interactive UI (landing
+   + room) is localized; the long English marketing articles under
+   MarketingPage are not translated yet. `apps/web/index.html`
+   carries the Chinese title/meta and babili.datumoj.com canonical
+   URLs.
+5. AGPL source links: the app's prominent "view source / fork"
+   links point at this fork (`SOURCE_URL` in `apps/web/src/App.tsx`,
+   https://github.com/gorou5/elm-chat) because AGPL-3.0 section 13
+   requires offering the source of the modified version actually
+   running. Upstream links remain where they describe upstream
+   (star counts, community issues, releases, deploy-your-own).
 
 Redeploy (automatic, since 2026-11-03):
 

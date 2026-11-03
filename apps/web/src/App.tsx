@@ -200,6 +200,10 @@ function formatBytes(bytes: number): string {
 }
 
 const GITHUB_URL = "https://github.com/shawnbure/elm-chat";
+// AGPL-3.0: the source of THIS running (modified) instance is the fork
+// below. The hero "view source / fork" links must point there, while
+// star counts, community issues, and release links stay with upstream.
+const SOURCE_URL = "https://github.com/gorou5/elm-chat";
 
 function formatCount(value: number): string {
   if (value < 1000) {
@@ -1128,10 +1132,10 @@ function LandingPage() {
             </span>
           </a>
           <div className="github-links" aria-label={t("projectSource")}>
-            <a className="github-mini" href={GITHUB_URL} rel="noreferrer" target="_blank">
+            <a className="github-mini" href={SOURCE_URL} rel="noreferrer" target="_blank">
               <GithubMark size={13} /> {t("viewSource")}
             </a>
-            <a className="github-mini" href={`${GITHUB_URL}/fork`} rel="noreferrer" target="_blank">
+            <a className="github-mini" href={`${SOURCE_URL}/fork`} rel="noreferrer" target="_blank">
               {t("forkMe")}
             </a>
             <a

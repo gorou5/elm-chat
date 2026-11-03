@@ -31,6 +31,15 @@ square"), implemented by `SquareDurableObject`
   page was removed; `/invite` now redirects to `/`.
 - On the homepage, live messages longer than 10 characters are
   revealed progressively (streaming effect); history is static.
+- Guest memberships (codes and bots) expire 24 hours after
+  joining; expired names return to the pool. Sandal never expires.
+- The header center shows Tokyo time. At fixed quarter hours
+  (:00/:15/:30/:45) a Durable Object alarm wipes the whole log
+  (whatever the per-message TTLs said) and broadcasts a clear
+  frame; in the last 10 seconds the clock flashes red.
+- Buttons on the square and login pages are icon-only; the
+  invite-code input is sized to exactly 6 monospace characters
+  with the hint as its placeholder.
 - Messages are public plaintext on the server and each one is
   deleted 10 minutes after posting. The room never self-destructs.
 - The classic private-room creation page lives on at `/new`

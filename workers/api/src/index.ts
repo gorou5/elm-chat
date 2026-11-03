@@ -362,10 +362,29 @@ function routeApi(request: Request, env: Env): Promise<Response> {
   // Babili square: the permanent public room behind the homepage.
   // One singleton Durable Object owns members, invite codes, and the
   // rolling 10-minute message history.
-  if (url.pathname.startsWith("/api/square/")) {
+  //
+  // Two prefixes reach it. /api/square/* serves the human web UI.
+  // /interfaco/square/* is the agent-facing surface (handshake,
+  // feed, avatars, posting) — kept off the obvious /api path so the
+  // bot endpoints are not found by casual probing; the bot-only
+  // endpoints answer 404 under /api.
+  const isInterfaco = url.pathname.startsWith("/interfaco/square/");
+  const squarePath = isInterfaco
+    ? `/api/square/${url.pathname.slice("/interfaco/square/".length)}`
+    : url.pathname;
+  if (squarePath.startsWith("/api/square/")) {
+    const botOnly =
+      squarePath === "/api/square/feed" ||
+      squarePath === "/api/square/handshake" ||
+      squarePath === "/api/square/handshake/verify" ||
+      squarePath === "/api/square/avatar" ||
+      squarePath.startsWith("/api/square/avatar/");
+    if (botOnly && !isInterfaco) {
+      return Promise.resolve(json({ error: "Not found." }, 404));
+    }
     // Avatar reads are served straight from KV; everything else
     // (including avatar uploads) belongs to the Durable Object.
-    const avatarMatch = url.pathname.match(/^\/api\/square\/avatar\/(.+)$/);
+    const avatarMatch = squarePath.match(/^\/api\/square\/avatar\/(.+)$/);
     if (avatarMatch && request.method === "GET") {
       const name = decodeURIComponent(avatarMatch[1]);
       return env.AVATARS.getWithMetadata(`avatar:${name}`, "arrayBuffer").then(
@@ -383,6 +402,11 @@ function routeApi(request: Request, env: Env): Promise<Response> {
       );
     }
     const stub = env.SQUARE.getByName("babili-square");
+    if (isInterfaco) {
+      const rewritten = new URL(request.url);
+      rewritten.pathname = squarePath;
+      return stub.fetch(new Request(rewritten, request));
+    }
     return stub.fetch(request);
   }
 
@@ -483,7 +507,7 @@ export default {
       return withSecurityHeaders(redirect);
     }
 
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/interfaco/")) {
       try {
         const response = await routeApi(request, env);
         return isWebSocketUpgrade(request) ? response : withSecurityHeaders(response);

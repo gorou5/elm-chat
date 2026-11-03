@@ -226,7 +226,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
   }
 
   private avatarUrl(name: string): string {
-    return `/api/square/avatar/${encodeURIComponent(name)}`;
+    return `/interfaco/square/avatar/${encodeURIComponent(name)}`;
   }
 
   private async persist(): Promise<void> {

@@ -2108,6 +2108,25 @@ select {
     padding-left: 16px;
     padding-right: 16px;
   }
+
+  /* The absolutely-centered clock overlaps the brand subtitle on
+     narrow screens; on mobile it takes its own full-width row
+     under the brand/actions row instead. */
+  .square-brand {
+    order: 1;
+  }
+
+  .square-actions {
+    order: 2;
+  }
+
+  .square-clock {
+    flex-basis: 100%;
+    order: 3;
+    position: static;
+    text-align: center;
+    transform: none;
+  }
 }
 
 /* ---- Babili invite page (/invite, unlinked) ---- */

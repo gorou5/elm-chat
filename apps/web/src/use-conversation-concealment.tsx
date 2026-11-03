@@ -37,7 +37,7 @@ export function useConversationConcealment(onHide: () => void) {
 
   const screen = hidden ? <main className="room-shell room-shell-centered concealed-conversation">
     <section className="access-screen" aria-labelledby="concealed-title">
-      <p className="eyebrow">elm chat</p>
+      <p className="eyebrow">Babili</p>
       <h1 id="concealed-title" className="access-title">{t("conversationHidden")}</h1>
       <p className="access-copy">{t("concealmentHint")}</p>
       <button className="primary-button" ref={showButton} type="button"

@@ -7,7 +7,7 @@ const built = readFileSync("apps/web/dist/security-and-limitations/index.html", 
 const builtPress = readFileSync("apps/web/dist/press/index.html", "utf8");
 const currentClaim = "Protocol v3 signs peer events with admitted ephemeral session keys, rotates room keys on membership changes, and retains bounded replay IDs across refresh in the same tab.";
 const staleClaim = "Message authentication and replay/duplicate protections are not implemented yet.";
-const nameClaim = "ELM stands for Ephemeral Logless Messaging.";
+const nameClaim = "Babili is the name of this deployment.";
 
 for (const [name, content] of [["React", react], ["prerender source", prerender], ["built article", built]]) {
   assert.ok(content.includes(currentClaim), `${name} is missing the current security claim`);

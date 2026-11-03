@@ -6,7 +6,7 @@
 // robots.txt).
 import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 
-const ORIGIN = process.env.SITE_ORIGIN ?? "https://elm.chat";
+const ORIGIN = process.env.SITE_ORIGIN ?? "https://babili.datumoj.com";
 
 const urls = [
   { path: "/", changefreq: "weekly", priority: "1.0" },

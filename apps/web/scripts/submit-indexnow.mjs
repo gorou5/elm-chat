@@ -1,4 +1,4 @@
-const host = "elm.chat";
+const host = "babili.datumoj.com";
 const key = "2de68112e8db8f8c07e4d6314d91bf54";
 const keyLocation = `https://${host}/${key}.txt`;
 const urlList = [

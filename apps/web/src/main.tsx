@@ -15,7 +15,7 @@ class RootBoundary extends React.Component<React.PropsWithChildren, RootBoundary
   }
 
   componentDidCatch(error: Error): void {
-    console.error("elm.chat render crash", error);
+    console.error("Babili render crash", error);
   }
 
   render() {
@@ -23,7 +23,7 @@ class RootBoundary extends React.Component<React.PropsWithChildren, RootBoundary
       return (
         <main className="room-shell room-shell-centered" lang="en">
           <section className="access-screen" aria-live="polite">
-            <p className="eyebrow">elm chat</p>
+            <p className="eyebrow">Babili</p>
             <h1 className="access-title">Could not open this session</h1>
             <p className="access-copy">
               The app hit a browser error while opening this room. Reload once. If it still fails,

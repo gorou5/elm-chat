@@ -26,12 +26,12 @@ type MarketingPageContent = {
 
 const pages: Record<MarketingSlug, MarketingPageContent> = {
   "security-and-limitations": {
-    title: "elm.chat security status and limitations",
+    title: "Babili security status and limitations",
     description:
-      "The public security status of elm.chat: what is encrypted, what metadata remains visible, known protocol gaps, destruction limits, and how to review or report issues.",
+      "The public security status of Babili: what is encrypted, what metadata remains visible, known protocol gaps, destruction limits, and how to review or report issues.",
     eyebrow: "Public security status",
     intro:
-      "elm.chat is an early-stage encrypted messenger, not an audited high-assurance security product. This page puts its current guarantees, known gaps, and review routes in one place.",
+      "Babili is an early-stage encrypted messenger, not an audited high-assurance security product. This page puts its current guarantees, known gaps, and review routes in one place.",
     body: (
       <>
         <section>
@@ -54,7 +54,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           </p>
           <p>
             A participant can save, copy, screenshot, photograph, forward, or back up plaintext and
-            files. Room destruction ends elm.chat&apos;s server-side room lifecycle; it cannot erase
+            files. Room destruction ends Babili&apos;s server-side room lifecycle; it cannot erase
             copies on participant devices or from other software.
           </p>
         </section>
@@ -62,7 +62,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Where it does—and does not—fit</h2>
           <p>
-            elm.chat is being built for temporary communication between known participants who want
+            Babili is being built for temporary communication between known participants who want
             fewer durable server-side copies. It should not currently be treated as an anonymous
             drop box, an audited high-risk communications system, a compliance product, or a
             production financial-control system.
@@ -134,7 +134,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Where a disposable room fits</h2>
           <p>
-            elm.chat is for one conversation, not a permanent contact network. A creator opens a
+            Babili is for one conversation, not a permanent contact network. A creator opens a
             room, issues a single-use invite, exchanges encrypted messages or files, and destroys
             the room when the job is done.
           </p>
@@ -173,7 +173,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         </section>
 
         <section>
-          <h2>What elm.chat changes</h2>
+          <h2>What Babili changes</h2>
           <p>
             There is no account or contact list. The room secret stays in the URL fragment during
             normal use, message and file content is encrypted in the browser, and the relay does not
@@ -213,7 +213,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         </section>
 
         <section>
-          <h2>How elm.chat transfers a file</h2>
+          <h2>How Babili transfers a file</h2>
           <ol>
             <li>Create a room and share its single-use invite with the intended recipient.</li>
             <li>Keep both browsers connected, then attach a file up to 25 MiB.</li>
@@ -227,7 +227,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           </ol>
           <p>
             The Cloudflare relay handles ciphertext and does not persist the file as a server-side
-            attachment. The sender must remain connected because elm.chat is a live transfer, not
+            attachment. The sender must remain connected because Babili is a live transfer, not
             an asynchronous file locker.
           </p>
         </section>
@@ -235,7 +235,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>What room destruction does—and does not—remove</h2>
           <p>
-            Destroying the room ends its server-side lifecycle and prevents elm.chat from becoming
+            Destroying the room ends its server-side lifecycle and prevents Babili from becoming
             a durable transcript or file repository. It does not erase a file the recipient saved,
             copied, photographed, backed up, or forwarded, and it cannot clean clipboard history,
             browser downloads, notification previews, or a compromised endpoint.
@@ -243,7 +243,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           <p>
             The relay can still observe ordinary metadata such as IP addresses, connection timing,
             presence, and encrypted payload sizes. File-event authentication and sender identity verification are not implemented yet,
-            and elm.chat has not completed an independent security audit. Do not treat it as an
+            and Babili has not completed an independent security audit. Do not treat it as an
             anonymous drop box, a compliance product, or a high-risk document-submission system.
           </p>
         </section>
@@ -293,7 +293,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             a single-use invite and destroy the room when the exchange is finished.
           </p>
           <p>
-            elm.chat encrypts message and file content in the browser and does not persist a
+            Babili encrypts message and file content in the browser and does not persist a
             server-side transcript. Its relay still observes connection metadata such as timing,
             sizes, IP addresses, and presence.
           </p>
@@ -352,7 +352,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           <p>
             Destroying the room prevents the relay from becoming a durable transcript. It cannot
             erase a participant&apos;s screenshot, clipboard, download, photograph, browser memory,
-            or another copy outside elm.chat.
+            or another copy outside Babili.
           </p>
         </section>
 
@@ -377,7 +377,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             talk and is reached through an invite you share directly.
           </p>
           <p>
-            elm.chat uses creator-issued, single-use invites. There is no public room directory,
+            Babili uses creator-issued, single-use invites. There is no public room directory,
             contact discovery, phone number, email address, or account profile.
           </p>
         </section>
@@ -482,7 +482,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           <p>
             Anonymity requires a separate design. SecureDrop uses Tor because hiding content alone
             is not enough for a source whose identity must remain unknown. A normal web chat,
-            including elm.chat, should not be treated as a substitute for that anonymity model.
+            including Babili, should not be treated as a substitute for that anonymity model.
           </p>
         </section>
 
@@ -509,7 +509,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             temporary exchange whose main concern is avoiding another permanent inbox thread.
           </p>
           <p>
-            elm.chat is an experiment in that narrow category. It requires no account, encrypts
+            Babili is an experiment in that narrow category. It requires no account, encrypts
             message and file content in the browser, relays ciphertext without persisting a
             server-side transcript, uses single-use invites, and lets the creator destroy the room.
           </p>
@@ -606,7 +606,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>A disposable room is an experiment, not a compliance shortcut</h2>
           <p>
-            I built elm.chat to explore this boundary. It creates a no-account room, encrypts
+            I built the original project to explore this boundary. It creates a no-account room, encrypts
             message and file content in participants&apos; browsers, uses a single-use invite, and
             relays ciphertext without persisting a server-side transcript. The creator can destroy
             the room when the handoff is complete.
@@ -629,7 +629,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             <li>Plain-language disclosure of deletion scope, metadata, participant copies, and failure states.</li>
           </ul>
           <p>
-            elm.chat is early-stage, has not had an independent security audit, and does not yet
+            Babili is early-stage, has not had an independent security audit, and does not yet
             verify sender identity or authenticate file events. It should not be presented as production-ready
             financial infrastructure or used for high-risk financial information on the strength
             of this article.
@@ -657,22 +657,22 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
     )
   },
   press: {
-    title: "elm.chat press and media kit",
+    title: "Babili press and media kit",
     description:
-      "Verified product facts, founder background, story angles, source material, and downloadable visuals for journalists covering elm.chat.",
+      "Verified product facts, founder background, story angles, source material, and downloadable visuals for journalists covering Babili.",
     eyebrow: "Press and media",
     intro:
-      "Everything an editor or reporter needs to describe elm.chat accurately—including the limits that should remain in any story.",
+      "Everything an editor or reporter needs to describe Babili accurately—including the limits that should remain in any story.",
     body: (
       <>
         <section>
           <h2>One-sentence description</h2>
           <p>
-            elm.chat is an open-source, account-free messenger for short-lived encrypted rooms with
+            Babili is an open-source, account-free messenger for short-lived encrypted rooms with
             single-use invites and no persisted server-side transcript.
           </p>
           <p>
-            ELM stands for Ephemeral Logless Messaging. “Logless” refers to the message transcript:
+            Babili is the name of this deployment. “Logless” refers to the message transcript:
             the relay does not retain one, though it can observe connection metadata.
           </p>
         </section>
@@ -680,7 +680,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>The idea behind the project</h2>
           <p>
-            Most software is designed to remember everything. elm.chat explores the opposite
+            Most software is designed to remember everything. Babili explores the opposite
             boundary: some accountable records should remain, while a temporary credential,
             clarification, or private conversation should be able to accomplish its purpose and
             end without automatically becoming another permanent archive.
@@ -707,7 +707,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Limits every story should preserve</h2>
           <ul>
-            <li>elm.chat has not had an independent security audit.</li>
+            <li>Babili has not had an independent security audit.</li>
             <li>Text messages authenticate to the shared room key, but sender identity and file events are not authenticated.</li>
             <li>Cloudflare can observe ordinary relay metadata such as IP addresses, timing, sizes, and presence.</li>
             <li>A participant, screenshot, clipboard, download, photograph, or compromised device can retain content.</li>
@@ -730,7 +730,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           <p>
             Shawn Bure is an AI and operations technology professional with decades of experience
             across financial operations, payments, telephony, CRM, integrations, cloud systems,
-            automation, and production AI. He leads Workrr AI and Workrr One and built elm.chat as
+            automation, and production AI. He leads Workrr AI and Workrr One and built the original project as
             an open experiment in data minimization and accountable software design.
           </p>
         </section>
@@ -753,12 +753,12 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Downloadable visuals</h2>
           <ul>
-            <li><a download href="/elm-chat-social.png">General elm.chat social card (1200×630 PNG)</a></li>
+            <li><a download href="/elm-chat-social.png">General Babili social card (1200×630 PNG)</a></li>
             <li><a download href="/elm-chat-architecture-social.png">Architecture social card (1200×630 PNG)</a></li>
             <li><a download href="/elm-chat-finance-social.png">Financial handoff social card (1200×630 PNG)</a></li>
           </ul>
           <p>
-            These images may be used in editorial coverage of elm.chat with attribution. Product
+            These images may be used in editorial coverage of Babili with attribution. Product
             claims should be checked against the source and threat model above.
           </p>
         </section>
@@ -766,7 +766,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Media inquiries</h2>
           <p>
-            Reach Shawn through his <a href="https://github.com/shawnbure" rel="noreferrer" target="_blank">GitHub profile</a> or start a public question in <a href="https://github.com/shawnbure/elm-chat/discussions" rel="noreferrer" target="_blank">elm.chat Discussions</a>.
+            Reach Shawn through his <a href="https://github.com/shawnbure" rel="noreferrer" target="_blank">GitHub profile</a> or start a public question in <a href="https://github.com/shawnbure/elm-chat/discussions" rel="noreferrer" target="_blank">Babili Discussions</a>.
           </p>
         </section>
 
@@ -836,16 +836,16 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         </section>
 
         <section>
-          <h2>Why I built elm.chat in public</h2>
+          <h2>Why I built the original project in public</h2>
           <p>
             I am an AI professional and technologist with decades of operating and software
             experience across payments, recovery operations, telephony, CRM, integrations, cloud
             systems, and production AI. I lead Workrr AI and Workrr One. Much of that work depends
-            on good records and accountable automation. elm.chat explores the complementary idea:
+            on good records and accountable automation. Babili explores the complementary idea:
             sometimes responsible software should create less evidence in the first place.
           </p>
           <p>
-            elm.chat creates an account-free room, encrypts messages and files in participants&apos;
+            Babili creates an account-free room, encrypts messages and files in participants&apos;
             browsers, relays ciphertext without persisting a server-side transcript, uses single-use
             invitations, and lets the creator destroy the room. The project is AGPL-3.0 so people can
             inspect, challenge, fork, and run it themselves.
@@ -854,7 +854,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             It is also early. It has not completed an independent security audit. Message
             sender identity and file-event authentication are unfinished. Cloudflare can observe ordinary connection metadata such
             as IP addresses, timing, sizes, and presence. Participant devices can retain everything
-            they receive. elm.chat is not an anonymity network or a high-risk source-protection tool.
+            they receive. Babili is not an anonymity network or a high-risk source-protection tool.
             Publishing those boundaries is part of the experiment, not an apology hidden after the
             slogan.
           </p>
@@ -887,7 +887,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
   "why-i-built-elm-chat": {
     title: "Why I built a messenger designed to disappear",
     description:
-      "Workrr founder Shawn Bure explains why he built elm.chat: an open-source disposable room for conversations that should not become permanent records.",
+      "Workrr founder Shawn Bure explains why he built the original project: an open-source disposable room for conversations that should not become permanent records.",
     eyebrow: "Founder's note",
     byline: "By Shawn Bure — founder of Workrr AI and Workrr One",
     intro:
@@ -920,7 +920,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             not another identity, contact list, notification stream, or archive.
           </p>
           <p>
-            That is the idea behind elm.chat. A person creates a room without an account, sends a
+            That is the idea behind Babili. A person creates a room without an account, sends a
             single-use invite, talks live, and destroys the room when the job is done. The goal is
             not to replace a mature messenger. It is to make a narrow, disposable channel easy
             enough to reach for at the moment it is useful.
@@ -930,7 +930,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Privacy should be an architecture, not an adjective</h2>
           <p>
-            elm.chat encrypts messages and files in participants&apos; browsers. The room secret stays
+            Babili encrypts messages and files in participants&apos; browsers. The room secret stays
             in the URL fragment during normal use, and the Cloudflare relay coordinates the live
             room without persisting a server-side transcript. Room policy and invite state exist;
             the conversation itself is held by connected clients and is intentionally disposable.
@@ -945,7 +945,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
         <section>
           <h2>Honesty matters more than a perfect privacy story</h2>
           <p>
-            elm.chat has not had an independent security audit. Protocol v3 authenticates an
+            Babili has not had an independent security audit. Protocol v3 authenticates an
             admitted browser session, not a person&apos;s real-world identity, and peer transcript sync cannot prove completeness. Cloudflare can observe relay metadata such as IP addresses, timing,
             sizes, and presence. A compromised device, screenshot, clipboard manager, photograph,
             or malicious recipient can preserve what the room was designed to forget.
@@ -963,7 +963,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
           <p>
             Workrr One asks how AI systems can remain accountable: explicit permissions, human
             approval, bounded retention, reproducible releases, and evidence of what happened.
-            elm.chat asks the complementary question: when does responsible software mean creating
+            Babili asks the complementary question: when does responsible software mean creating
             less evidence in the first place?
           </p>
           <p>
@@ -972,7 +972,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
             accomplish their purpose and end. Software should be capable of telling the difference.
           </p>
           <p>
-            If that idea resonates, try elm.chat with non-critical information, read the source and
+            If that idea resonates, try Babili with non-critical information, read the source and
             threat model, open an issue, or deploy your own copy. The most useful contribution is not
             praise. It is evidence that helps make the boundary more honest.
           </p>
@@ -984,7 +984,7 @@ const pages: Record<MarketingSlug, MarketingPageContent> = {
   },
   "deletion-distributed-systems-contract": {
     developerAudience: true,
-    byline: "By Shawn Bure — creator of elm.chat",
+    byline: "By Shawn Bure — creator of the original project",
     title: "Deletion is a distributed-systems contract, not a UI animation",
     description:
       "A provider-neutral engineering guide to deletion semantics: state inventories, control and data planes, expiry authority, failure modes, verification, and honest user promises.",
@@ -1167,9 +1167,9 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
         </section>
 
         <section>
-          <h2>elm.chat as an inspectable, imperfect case study</h2>
+          <h2>Babili as an inspectable, imperfect case study</h2>
           <p>
-            elm.chat applies a narrow version of this model. A Durable Object stores room policy,
+            Babili applies a narrow version of this model. A Durable Object stores room policy,
             status, creator capability, and invite state. Connected browsers hold the current
             conversation history. The relay forwards encrypted messages and file chunks without
             persisting a server-side transcript. Destroying the room changes its control-plane state
@@ -1193,7 +1193,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
             property engineers can model, test, monitor, and explain.
           </p>
           <p>
-            The complete elm.chat source, architecture, threat model, and deployment path are public
+            The complete Babili source, architecture, threat model, and deployment path are public
             under AGPL-3.0 for anyone who wants to challenge the example or adapt the design to a
             different infrastructure.
           </p>
@@ -1205,13 +1205,13 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
   },
   "building-ephemeral-chat-cloudflare": {
     developerAudience: true,
-    byline: "By Shawn Bure — creator of elm.chat",
+    byline: "By Shawn Bure — creator of the original project",
     title: "Building ephemeral encrypted chat with Cloudflare Durable Objects",
     description:
-      "A technical walkthrough of elm.chat's React, Web Crypto, Cloudflare Worker, Durable Object, WebSocket, encryption, disposable-room, and one-click deployment architecture.",
+      "A technical walkthrough of Babili's React, Web Crypto, Cloudflare Worker, Durable Object, WebSocket, encryption, disposable-room, and one-click deployment architecture.",
     eyebrow: "Architecture walkthrough",
     intro:
-      "elm.chat uses one Cloudflare Worker and one Durable Object per room to coordinate a live encrypted conversation without turning the server into a transcript database.",
+      "Babili uses one Cloudflare Worker and one Durable Object per room to coordinate a live encrypted conversation without turning the server into a transcript database.",
     body: (
       <>
         <section>
@@ -1252,13 +1252,13 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
           <p>
             Direct WebRTC is attractive, but ICE negotiation can reveal participant IP addresses to
             other room members, and reliable connectivity often requires a TURN relay anyway.
-            elm.chat deliberately sends ciphertext through the Durable Object so participants never
+            Babili deliberately sends ciphertext through the Durable Object so participants never
             connect directly and the flow works on restrictive networks.
           </p>
           <p>
             This is a tradeoff, not magic. Cloudflare can still observe IP addresses, connection
             timing, payload sizes, and presence. The relay cannot read message or file plaintext,
-            but elm.chat does not claim to hide metadata from its infrastructure.
+            but Babili does not claim to hide metadata from its infrastructure.
           </p>
         </section>
 
@@ -1281,7 +1281,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
         <section>
           <h2>A deploy button needs a root contract</h2>
           <p>
-            elm.chat is an npm-workspaces repository. Its original Wrangler configuration lived
+            Babili is an npm-workspaces repository. Its original Wrangler configuration lived
             under <code>workers/api</code>, which worked for local and production commands but was
             invisible to the Deploy to Cloudflare setup flow. The button existed, yet a fresh
             visitor reached <strong>No Wrangler configuration detected</strong> and Cloudflare fell
@@ -1290,7 +1290,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
           <p>
             The repository now has a root <code>wrangler.jsonc</code>, root build and deploy scripts,
             and a check that fails when the root and workspace runtime resources drift. The public
-            template deliberately omits elm.chat&apos;s optional Analytics Engine dataset because
+            template deliberately omits Babili&apos;s optional Analytics Engine dataset because
             Cloudflare does not list Analytics Engine among the resources its deploy button
             automatically provisions. Independent instances work without that measurement binding.
           </p>
@@ -1307,7 +1307,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
             >
               Deploy to Cloudflare guide
             </a>
-            , and the elm.chat fix is public in{" "}
+            , and the Babili fix is public in{" "}
             <a
               href="https://github.com/shawnbure/elm-chat/pull/89"
               rel="noreferrer"
@@ -1340,7 +1340,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
   },
   "cloudflare-deploy-button-monorepo": {
     developerAudience: true,
-    byline: "By Shawn Bure — creator of elm.chat",
+    byline: "By Shawn Bure — creator of the original project",
     title:
       "Fixing Deploy to Cloudflare in a monorepo: expose the root contract",
     description:
@@ -1353,7 +1353,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
         <section>
           <h2>The failure appears after the badge works</h2>
           <p>
-            elm.chat already had a working production deployment and a valid
+            Babili already had a working production deployment and a valid
             Deploy to Cloudflare link. Its Wrangler configuration lived under{" "}
             <code>workers/api</code>, where local and production commands could
             find it. A new visitor followed the badge, however, and Cloudflare
@@ -1397,11 +1397,11 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
             Keep the public template smaller than production when necessary
           </h2>
           <p>
-            elm.chat&apos;s production Worker uses an optional Analytics Engine
+            Babili&apos;s production Worker uses an optional Analytics Engine
             binding for its own aggregate growth measurement. Cloudflare does
             not list Analytics Engine among the resources its deploy button
             automatically provisions, so the public root template omits that
-            binding. Independent instances work without sending elm.chat
+            binding. Independent instances work without sending Babili
             measurement events.
           </p>
           <p>
@@ -1416,7 +1416,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
           <h2>Two configurations require a drift test</h2>
           <p>
             A root template and a workspace production configuration can quietly
-            diverge. elm.chat runs a repository check that compares the Worker
+            diverge. Babili runs a repository check that compares the Worker
             entry point, Durable Object binding, migration tag, assets
             directory, compatibility date, and resolved paths. The build fails
             if the shared runtime contract drifts.
@@ -1456,7 +1456,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
             >
               Deploy to Cloudflare guide
             </a>
-            . The elm.chat repair is public in{" "}
+            . The Babili repair is public in{" "}
             <a
               href="https://github.com/shawnbure/elm-chat/pull/89"
               rel="noreferrer"
@@ -1484,7 +1484,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
   },
   "single-use-invite-links": {
     developerAudience: true,
-    byline: "By Shawn Bure — creator of elm.chat",
+    byline: "By Shawn Bure — creator of the original project",
     title: "Single-use invite links are capabilities: at-most-once admission without broken reconnects",
     description:
       "How to design one-time invite links with separate routing, admission, decryption, expiry, revocation, at-most-once consumption, and reconnect semantics.",
@@ -1498,7 +1498,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
           <p>
             A reusable secret link usually answers several questions at once: which room, who may
             enter, and which key decrypts the conversation. Forwarding that link forwards every
-            capability it contains. elm.chat instead gives each concern a different value:
+            capability it contains. Babili instead gives each concern a different value:
           </p>
           <ul>
             <li><strong>Room ID:</strong> a path segment used to route the request.</li>
@@ -1520,7 +1520,7 @@ Invariant: no transition leaves DESTROYED or RECLAIMED.`}</code>
           <h2>Represent an invite as a state machine</h2>
           <p>
             An invite is not a Boolean named <code>valid</code>. It has time and ownership semantics.
-            The current elm.chat record contains a random token, creation and expiry times, and
+            The current Babili record contains a random token, creation and expiry times, and
             optional consumption, consuming-session, and revocation fields.
           </p>
           <pre>
@@ -1575,7 +1575,7 @@ admitSocket();`}</code>
           <h2>Reconnect is not a second redemption</h2>
           <p>
             At-most-once admission without reconnect semantics creates a brittle product: a page
-            reload consumes a second invite or locks out the intended participant. elm.chat stores
+            reload consumes a second invite or locks out the intended participant. Babili stores
             a random room-scoped session ID in browser session storage. The session that consumed
             the invite may reconnect with the same ID while the invite remains unrevoked; a new
             session is rejected.
@@ -1631,7 +1631,7 @@ admitSocket();`}</code>
             <li><a href={THREAT_MODEL_URL} rel="noreferrer" target="_blank">Threat model and known limits</a></li>
           </ul>
           <p>
-            elm.chat has not had an independent security audit. Sender identity, file-event
+            Babili has not had an independent security audit. Sender identity, file-event
             authentication, and replay protection after refresh are unfinished; the Cloudflare relay sees ordinary
             connection metadata, and endpoints can retain copies. Do not use it as an anonymity,
             high-risk, regulated-data, or production-finance system.
@@ -1644,13 +1644,13 @@ admitSocket();`}</code>
   },
   "durable-objects-websocket-hibernation": {
     developerAudience: true,
-    byline: "By Shawn Bure — creator of elm.chat",
+    byline: "By Shawn Bure — creator of the original project",
     title: "Durable Objects WebSocket hibernation without a chat database",
     description:
-      "How elm.chat uses Cloudflare Durable Objects WebSocket hibernation, serialized socket attachments, client-held encrypted history, and peer sync without storing a server transcript.",
+      "How Babili uses Cloudflare Durable Objects WebSocket hibernation, serialized socket attachments, client-held encrypted history, and peer sync without storing a server transcript.",
     eyebrow: "Durable Objects deep dive",
     intro:
-      "WebSocket hibernation can keep a room reachable while its Durable Object sleeps. It does not preserve ordinary JavaScript memory, so elm.chat separates durable room state, live connection identity, and disposable message history.",
+      "WebSocket hibernation can keep a room reachable while its Durable Object sleeps. It does not preserve ordinary JavaScript memory, so Babili separates durable room state, live connection identity, and disposable message history.",
     body: (
       <>
         <section>
@@ -1773,7 +1773,7 @@ function Limitations() {
     <aside className="marketing-caveat">
       <strong>Security status</strong>
       <p>
-        elm.chat has not had an independent security audit. Review the{" "}
+        Babili has not had an independent security audit. Review the{" "}
         <a href="/security-and-limitations">public security status</a>{" "}
         before using it for a sensitive situation.
       </p>
@@ -1800,7 +1800,7 @@ export function MarketingPage({
     if (externalSource) {
       recordGrowthEvent("external_referral_viewed", externalSource);
     }
-    document.title = `${page.title} | elm.chat`;
+    document.title = `${page.title} | Babili`;
     if (description) {
       description.content = page.description;
     }
@@ -1815,9 +1815,9 @@ export function MarketingPage({
 
   return (
     <main className="marketing-shell">
-      <nav className="marketing-nav" aria-label="elm.chat">
+      <nav className="marketing-nav" aria-label="Babili">
         <a className="marketing-brand" href="/">
-          elm.chat
+          Babili
         </a>
         <div>
           <a href="/press">Press kit</a>
@@ -1876,7 +1876,7 @@ export function MarketingPage({
           {page.developerAudience ? (
             <>
               <p className="eyebrow">Fork it. Deploy it. Inspect every claim.</p>
-              <h2>Run elm.chat on your own Cloudflare account</h2>
+              <h2>Run Babili on your own Cloudflare account</h2>
               <p>
                 Deploy the complete AGPL-3.0 app as one Worker with a room-scoped Durable Object,
                 then inspect or change the implementation yourself.
@@ -1913,7 +1913,7 @@ export function MarketingPage({
                 href={roomHref}
                 onClick={() => recordGrowthEvent("marketing_cta_clicked", slug)}
               >
-                Open elm.chat
+                Open Babili
               </a>
             </>
           )}
@@ -1934,14 +1934,14 @@ function RelatedGuides({ current }: { current: MarketingSlug }) {
     { slug: "temporary-financial-handoff", label: "Temporary financial handoffs" },
     { slug: "security-and-limitations", label: "Security status and limitations" },
     { slug: "the-internet-needs-places-that-forget", label: "Why the internet needs places that forget" },
-    { slug: "why-i-built-elm-chat", label: "Why I built elm.chat" },
+    { slug: "why-i-built-elm-chat", label: "Why I built the original project" },
     {
       slug: "deletion-distributed-systems-contract",
       label: "Deletion as a distributed-systems contract"
     },
     {
       slug: "building-ephemeral-chat-cloudflare",
-      label: "How elm.chat works on Cloudflare"
+      label: "How Babili works on Cloudflare"
     },
     {
       slug: "durable-objects-websocket-hibernation",

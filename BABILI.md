@@ -6,9 +6,10 @@ datumoj Worker.
 
 - Upstream: https://github.com/shawnbure/elm-chat
 - Upstream commit: 4c3c46c (Merge pull request #143, 2026-11-03 import)
-- License: AGPL-3.0 (see LICENSE). The app keeps its upstream
-  "elm.chat" branding; the landing footer links to this fork, which
-  is the public source for the modified version running here.
+- License: AGPL-3.0 (see LICENSE). Since 2026-11-03 the site is
+  branded "Babili" throughout its copy; the landing footer links
+  to this fork, which is the public source for the modified
+  version running here.
 - Cloudflare account: Datumoj (credentials in ~/.cloudflare-2.env,
   never commit them)
 - Worker name: `babili` (independent Worker, `workers_dev` disabled)
@@ -68,6 +69,20 @@ Local changes vs upstream (branch `babili`):
    community feed, duplicated policy metrics, star/fork counts,
    and the room-secret explainer. The GitHub source link sits
    alone at the bottom-left of the page footer.
+9. Babili rebrand (2026-11-03): every user-facing product name —
+   landing and room UI in all three locales, page titles/meta and
+   JSON-LD, the marketing pages (React source and prerender
+   script), RSS feed, llms.txt, and security.txt canonical — now
+   says Babili. Deliberately NOT renamed, because they are
+   identifiers or real addresses rather than copy: the
+   `@elm-chat/*` package scope, localStorage key prefixes, the
+   GitHub repository URLs (gorou5/elm-chat, shawnbure/elm-chat),
+   article URL slugs (e.g. /why-i-built-elm-chat), and the social
+   image file names. Founder references were reworded to
+   "the original project" so the rebrand does not claim Shawn
+   Bure created Babili; the press page's "ELM stands for…"
+   sentence became "Babili is the name of this deployment." and
+   `scripts/check-security-copy.mjs` asserts the new sentence.
 
 Redeploy (automatic, since 2026-11-03):
 

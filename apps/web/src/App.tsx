@@ -652,7 +652,7 @@ function InvalidInviteScreen({ reason, focusRef }: { reason: InviteAccess } & Re
   return (
     <main className="room-shell room-shell-centered">
       <section className="access-screen" aria-live="polite">
-        <p className="eyebrow">elm chat</p>
+        <p className="eyebrow">Babili</p>
         <h1 className="access-title" ref={focusRef} tabIndex={-1}>{t("invalidLink")}</h1>
         <p className="access-copy">{copy}</p>
         <a
@@ -672,7 +672,7 @@ function RemovedFromRoomScreen({ focusRef }: RecoveryFocusTarget) {
   return (
     <main className="room-shell room-shell-centered">
       <section className="access-screen" aria-live="polite">
-        <p className="eyebrow">elm chat</p>
+        <p className="eyebrow">Babili</p>
         <h1 className="access-title" ref={focusRef} tabIndex={-1}>{t("removedTitle")}</h1>
         <p className="access-copy">{t("removedCopy")}</p>
         <a
@@ -755,7 +755,7 @@ function InviteCheckingScreen({ connection, error, onRetry, focusRef }: {
   return (
     <main className="room-shell room-shell-centered">
       <section className="access-screen" aria-live="polite">
-        <p className="eyebrow">elm chat</p>
+        <p className="eyebrow">Babili</p>
         <h1 className="access-title">{t("checkingInvite")}</h1>
         <p className="access-copy">{t("verifyingInvite")}</p>
         <p ref={focusRef} tabIndex={-1}>{connection}</p>
@@ -771,7 +771,7 @@ function RoomGoneScreen({ fromInvite, reason, focusRef }: { fromInvite: boolean;
   return (
     <main className="room-shell room-shell-centered">
       <section className="access-screen" aria-live="polite">
-        <p className="eyebrow">elm chat</p>
+        <p className="eyebrow">Babili</p>
         <h1 className="access-title" ref={focusRef} tabIndex={-1}>{t("roomGone")}</h1>
         <p className="access-copy">
           {reason ?? t("roomGoneCopy")}
@@ -863,7 +863,7 @@ function LandingPage() {
     <main className="landing-shell">
       <header className="landing-header">
         <p className="hero-brand">
-          <span className="hero-brand-name">elm chat</span>
+          <span className="hero-brand-name">Babili</span>
         </p>
         <nav className="hero-links" aria-label={t("learnAbout")}>
           <a className="hero-link" href="/security-and-limitations">
@@ -2209,7 +2209,7 @@ function RoomPage({ roomId }: { roomId: string }) {
       if (typeof navigator.share === "function") {
         try {
           await navigator.share({
-            title: "elm.chat invite",
+            title: "Babili invite",
             text: t("inviteShareText"),
             url: inviteUrl
           });
@@ -2275,7 +2275,7 @@ function RoomPage({ roomId }: { roomId: string }) {
     }
     try {
       await navigator.share({
-        title: "elm.chat invite",
+        title: "Babili invite",
         text: t("inviteShareText"),
         url: buildInviteUrl(roomId, token, roomSecret)
       });
@@ -2420,7 +2420,7 @@ function RoomPage({ roomId }: { roomId: string }) {
     <main className="room-shell room-content" hidden={concealment.hidden} style={concealment.hidden ? { display: "none" } : undefined}>
       <header className="room-header">
         <div className="room-title">
-          <p className="eyebrow">elm chat</p>
+          <p className="eyebrow">Babili</p>
           <h1>{roomId.slice(0, 8)}</h1>
           <p className="room-subtitle">
             {messagePolicyLabel} {roomPolicyLabel}

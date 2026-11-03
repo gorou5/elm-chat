@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const ORIGIN = process.env.SITE_ORIGIN ?? "https://elm.chat";
+const ORIGIN = process.env.SITE_ORIGIN ?? "https://babili.datumoj.com";
 const slugs = [
   "security-and-limitations",
   "send-a-file-securely",
@@ -78,12 +78,12 @@ const itemXml = items
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>elm.chat — articles and technical notes</title>
+    <title>Babili — articles and technical notes</title>
     <link>${ORIGIN}/</link>
     <description>Writing about ephemeral encrypted messaging, deliberate data minimization, Cloudflare architecture, and the limits of disposable communication.</description>
     <language>en-us</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <generator>elm.chat build</generator>
+    <generator>Babili build</generator>
     <atom:link href="${ORIGIN}/feed.xml" rel="self" type="application/rss+xml" />
 ${itemXml}
   </channel>

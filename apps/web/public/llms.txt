@@ -35,3 +35,5 @@ elm.chat is an early-stage experiment in minimizing the transcript a chat servic
 - [Send a password without leaving it in chat history](https://elm.chat/send-a-password-securely): A limited-risk workflow with explicit caveats.
 - [Send a file without creating another attachment archive](https://elm.chat/send-a-file-securely): A practical workflow and its endpoint limitations.
 - [Temporary private chat without signup](https://elm.chat/temporary-private-chat): How the account-free room flow works.
+
+<!-- babili workers-builds push test 2026-11-03 -->

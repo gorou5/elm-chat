@@ -115,18 +115,6 @@ type InviteDurationDraft = {
   unit: DurationUnit;
 };
 
-type CommunityIssue = {
-  number: number;
-  title: string;
-  url: string;
-  date: string;
-};
-
-type CommunityFeed = {
-  fixes: CommunityIssue[];
-  requests: CommunityIssue[];
-};
-
 type DurationKind = "message" | "room";
 
 function roomPathname(): { view: View; roomId?: string; marketingSlug?: MarketingSlug } {
@@ -206,19 +194,8 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
-const GITHUB_URL = "https://github.com/shawnbure/elm-chat";
-// AGPL-3.0: the source of THIS running (modified) instance is the fork
-// below. The hero "view source / fork" links must point there, while
-// star counts, community issues, and release links stay with upstream.
+// AGPL-3.0: the footer links to the source of this running instance.
 const SOURCE_URL = "https://github.com/gorou5/elm-chat";
-
-function formatCount(value: number): string {
-  if (value < 1000) {
-    return String(value);
-  }
-  const thousands = value / 1000;
-  return `${thousands.toFixed(thousands < 10 ? 1 : 0).replace(/\.0$/, "")}k`;
-}
 
 function creatorTokenKey(roomId: string): string {
   return `elm-chat:creator:${roomId}`;
@@ -836,18 +813,6 @@ export function App() {
 function LandingPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [community, setCommunity] = useState<CommunityFeed | null>(null);
-  const [communityError, setCommunityError] = useState(false);
-  const [ghStats, setGhStats] = useState<{ stars: number | null; forks: number | null }>({
-    stars: null,
-    forks: null
-  });
-  const whyUseUrl =
-    "https://github.com/shawnbure/elm-chat/blob/main/docs/why-use-elm-chat.md";
-  const articleUrl =
-    "https://github.com/shawnbure/elm-chat/blob/main/docs/truly-private-messaging.md";
-  const sourceParam = new URLSearchParams(window.location.search).get("source");
-  const externalSource = resolveExternalAcquisitionSource(sourceParam, document.referrer);
   const [messageDuration, setMessageDuration] = useState<DurationDraft>({
     amount: "7",
     unit: "minutes",
@@ -858,45 +823,6 @@ function LandingPage() {
     unit: "minutes",
     indefinite: false
   });
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/stars")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (active && data) {
-          setGhStats({ stars: data.stars ?? null, forks: data.forks ?? null });
-        }
-      })
-      .catch(() => {
-        // Non-fatal: counts simply stay hidden if the lookup fails.
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/community")
-      .then((response) => {
-        if (!response.ok) throw new Error("Community feed unavailable.");
-        return response.json() as Promise<CommunityFeed>;
-      })
-      .then((feed) => {
-        if (active) setCommunity(feed);
-      })
-      .catch(() => {
-        if (active) setCommunityError(true);
-      });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    if (externalSource) {
-      recordGrowthEvent("external_referral_viewed", externalSource);
-    }
-  }, [externalSource]);
 
   function updateDurationIndefinite(kind: DurationKind, checked: boolean) {
     if (kind === "message") {
@@ -938,68 +864,20 @@ function LandingPage() {
       <header className="landing-header">
         <p className="hero-brand">
           <span className="hero-brand-name">elm chat</span>
-          <span className="hero-brand-meaning">
-            <span className="hero-brand-separator" aria-hidden="true">·</span>
-            {t("nameMeaning")}
-          </span>
         </p>
-        <div className="hero-links" aria-label={t("learnAbout")}>
-          <a className="hero-link" href={whyUseUrl} rel="noreferrer" target="_blank">
-            {t("whyUse")}
-          </a>
-          <a className="hero-link" href={articleUrl} rel="noreferrer" target="_blank">
-            {t("readArticle")}
-          </a>
-          <a className="hero-link" href="/press">
-            {t("pressKit")}
-          </a>
+        <nav className="hero-links" aria-label={t("learnAbout")}>
           <a className="hero-link" href="/security-and-limitations">
             {t("securityStatus")}
           </a>
-        </div>
+        </nav>
       </header>
       <section className="hero">
         <div className="hero-copy">
-          {externalSource === "freshcode" ? (
-            <aside className="external-arrival" aria-label={t("freshcodeFound")}>
-              <span className="external-arrival-label">{t("freshcodeFound")}</span>
-              <strong>{t("freshcodeOpen")}</strong>
-              <p>{t("freshcodeCopy")}</p>
-              <div className="external-arrival-actions">
-                <a
-                  href={`${GITHUB_URL}/releases/tag/v0.1.0`}
-                  onClick={() => recordGrowthEvent("external_source_clicked", externalSource)}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {t("inspectRelease")}
-                </a>
-                <a
-                  href={`https://deploy.workers.cloudflare.com/?url=${GITHUB_URL}`}
-                  onClick={() => recordGrowthEvent("external_deploy_clicked", externalSource)}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {t("deployOwn")}
-                </a>
-              </div>
-            </aside>
-          ) : null}
           <h1>{t("heroTitle")}</h1>
-          <p className="lede">
-            {t("heroCopy")}
-          </p>
           <div className="creation-panel">
             <div className="setting-row" role="group" aria-labelledby="message-policy-label">
               <div>
                 <span className="setting-label" id="message-policy-label">{t("messageVanish")}</span>
-                <p className="setting-note">
-                  {formatSelectedDuration(
-                    messageDuration.amount,
-                    messageDuration.unit,
-                    messageDuration.indefinite
-                  )}
-                </p>
               </div>
               <div
                 className={`setting-controls ${messageDuration.indefinite ? "setting-controls-disabled" : ""}`}
@@ -1103,94 +981,16 @@ function LandingPage() {
             <button className="primary-button" disabled={creating} onClick={handleCreate}>
               {creating ? t("creatingRoom") : t("createRoom")}
             </button>
-            <p className="helper-text">
-              {t("roomSecret")}
-            </p>
             <p className="helper-text">{t("securityWarning")}</p>
           </div>
           {error ? <p className="error-text">{error}</p> : null}
         </div>
-        <div className="hero-panel">
-          <div className="github-community" aria-label={t("communityTitle")}>
-            <div className="community-section">
-              <div className="community-heading">
-                <h2>{t("latestFixes")}</h2>
-                <a href={`${GITHUB_URL}/issues?q=is%3Aissue%20state%3Aclosed`} rel="noreferrer" target="_blank">
-                  {t("viewAll")}
-                </a>
-              </div>
-              {community?.fixes.map((issue) => (
-                <a className="community-fix" href={issue.url} key={issue.number} rel="noreferrer" target="_blank">
-                  <span className="community-number">#{issue.number}</span>
-                  <span className="community-title">{issue.title}</span>
-                </a>
-              ))}
-              {community && community.fixes.length === 0 ? <p className="community-empty">{t("noFixes")}</p> : null}
-            </div>
-            <div className="community-section">
-              <div className="community-heading">
-                <h2>{t("openRequests")}</h2>
-                <a href={`${GITHUB_URL}/issues?q=is%3Aissue%20state%3Aopen`} rel="noreferrer" target="_blank">
-                  {t("viewAll")}
-                </a>
-              </div>
-              {community?.requests.map((issue) => (
-                <a className="community-request" href={issue.url} key={issue.number} rel="noreferrer" target="_blank">
-                  <span className="community-number">#{issue.number}</span>
-                  <span className="community-title">{issue.title}</span>
-                </a>
-              ))}
-              {community && community.requests.length === 0 ? (
-                <p className="community-empty">{t("noRequests")}</p>
-              ) : null}
-            </div>
-            {!community && !communityError ? <p className="community-empty">{t("loadingCommunity")}</p> : null}
-            {communityError ? (
-              <p className="community-empty">{t("communityUnavailable")}{" "}
-                <a href={`${GITHUB_URL}/issues`} rel="noreferrer" target="_blank">{t("viewOnGithub")}</a>
-              </p>
-            ) : null}
-          </div>
-          <div className="hero-metrics">
-            <div>
-              <span>{t("access")}</span>
-              <strong>{t("secretLinkOnly")}</strong>
-            </div>
-            <div>
-              <span>{t("messagePolicy")}</span>
-              <strong>
-                {messageDuration.indefinite
-                  ? t("manualCleanup")
-                  : formatSelectedDuration(messageDuration.amount, messageDuration.unit, false)}
-              </strong>
-            </div>
-            <div>
-              <span>{t("roomPolicy")}</span>
-              <strong>{roomDuration.indefinite ? t("noIdleTimeout") : t("idleSelfDestruct")}</strong>
-            </div>
-          </div>
-        </div>
       </section>
       <footer className="landing-footer">
-        <div className="footer-left">
-          <a className="footer-source" href={SOURCE_URL} rel="noreferrer" target="_blank">
-            <GithubMark size={16} />
-            <span>{t("viewSource")} · github.com/gorou5/elm-chat</span>
-          </a>
-          <a className="footer-upstream" href={GITHUB_URL} rel="noreferrer" target="_blank">
-            {t("upstreamSource")} · github.com/shawnbure/elm-chat
-          </a>
-          <a className="footer-license" href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noreferrer" target="_blank">
-            AGPL-3.0
-          </a>
-          {ghStats.stars !== null ? (
-            <span className="footer-stat"><span aria-hidden="true">★</span> {formatCount(ghStats.stars)}</span>
-          ) : null}
-          {ghStats.forks !== null ? (
-            <span className="footer-stat"><span aria-hidden="true">⑂</span> {formatCount(ghStats.forks)}</span>
-          ) : null}
-        </div>
-        <span className="footer-note">babili.datumoj.com</span>
+        <a className="footer-source" href={SOURCE_URL} rel="noreferrer" target="_blank">
+          <GithubMark size={16} />
+          <span>{t("viewSource")} · github.com/gorou5/elm-chat</span>
+        </a>
       </footer>
     </main>
   );

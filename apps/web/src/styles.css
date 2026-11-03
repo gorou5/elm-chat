@@ -1646,7 +1646,7 @@ select {
 .manual-invite button { justify-self: start; }
 
 /* ================================================================
-   Babili edition — landing page restyled after shadcn/ui.
+   Babili edition — minimal landing page in shadcn/ui style.
    Scoped to .landing-shell so the room UI keeps the upstream
    theme. Tokens mirror shadcn/ui's zinc theme: flat background,
    1px borders, small radius, zinc-900 primary, muted zinc text.
@@ -1692,12 +1692,6 @@ select {
   color: var(--foreground);
 }
 
-.landing-shell .hero-brand-meaning,
-.landing-shell .hero-brand-separator {
-  color: var(--muted-foreground);
-  font-weight: 400;
-}
-
 .landing-shell .hero-links {
   margin: 0;
   justify-content: flex-end;
@@ -1724,14 +1718,14 @@ select {
 .landing-shell .hero {
   flex: 1;
   width: 100%;
-  padding: 32px 24px 40px;
+  padding: 40px 24px 48px;
   min-height: auto;
-  align-items: start;
-  gap: 24px;
+  grid-template-columns: minmax(0, 44rem);
+  justify-content: center;
+  align-content: center;
 }
 
-.landing-shell .hero-copy,
-.landing-shell .hero-panel {
+.landing-shell .hero-copy {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1740,36 +1734,11 @@ select {
   padding: 28px;
 }
 
-.landing-shell .hero-panel {
-  justify-content: flex-start;
-  gap: 22px;
-}
-
 .landing-shell .hero h1 {
   font-size: 2.3rem;
   line-height: 1.12;
   letter-spacing: -0.03em;
   max-width: 100%;
-  color: var(--foreground);
-}
-
-.landing-shell .lede {
-  color: var(--muted-foreground);
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.landing-shell .external-arrival {
-  background: #fafafa;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.landing-shell .external-arrival-label {
-  color: var(--muted-foreground);
-}
-
-.landing-shell .external-arrival-actions a {
   color: var(--foreground);
 }
 
@@ -1842,69 +1811,6 @@ select {
   line-height: 1.55;
 }
 
-.landing-shell .community-heading h2 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-.landing-shell .community-heading a,
-.landing-shell .community-empty a {
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-}
-
-.landing-shell .community-fix,
-.landing-shell .community-request {
-  border-bottom: 1px solid #f4f4f5;
-  border-radius: 6px;
-  padding: 8px 6px;
-  margin: 0 -6px;
-}
-
-.landing-shell .community-fix:hover,
-.landing-shell .community-request:hover {
-  background: #fafafa;
-}
-
-.landing-shell .community-fix:hover .community-title,
-.landing-shell .community-request:hover .community-title {
-  text-decoration: none;
-}
-
-.landing-shell .community-number {
-  color: var(--muted-foreground);
-  font-weight: 500;
-}
-
-.landing-shell .community-empty {
-  color: var(--muted-foreground);
-}
-
-.landing-shell .hero-metrics {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.landing-shell .hero-metrics div {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #fafafa;
-  padding: 12px 14px;
-}
-
-.landing-shell .hero-metrics span {
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  color: var(--muted-foreground);
-}
-
-.landing-shell .hero-metrics strong {
-  font-size: 1rem;
-  margin-top: 4px;
-  color: var(--foreground);
-}
-
 .landing-footer {
   width: 100%;
   max-width: 1120px;
@@ -1913,18 +1819,7 @@ select {
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px 24px;
-  flex-wrap: wrap;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: 0.82rem;
-  color: var(--muted-foreground);
+  justify-content: flex-start;
 }
 
 .footer-source {
@@ -1932,36 +1827,22 @@ select {
   align-items: center;
   gap: 7px;
   color: var(--foreground);
+  font-size: 0.82rem;
   font-weight: 500;
   text-decoration: none;
 }
 
-.footer-source:hover,
-.footer-upstream:hover,
-.footer-license:hover {
+.footer-source:hover {
   text-decoration: underline;
-}
-
-.footer-upstream,
-.footer-license {
-  color: var(--muted-foreground);
-  text-decoration: none;
-}
-
-.footer-note {
-  color: #a1a1aa;
-  font-size: 0.78rem;
 }
 
 @media (max-width: 900px) {
   .landing-shell .hero {
-    grid-template-columns: 1fr;
     padding: 24px 16px 32px;
   }
 
   .landing-header {
     padding: 12px 16px;
-    flex-wrap: wrap;
   }
 
   .landing-footer {
@@ -1974,12 +1855,7 @@ select {
 }
 
 @media (max-width: 560px) {
-  .landing-shell .hero-metrics {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-shell .hero-copy,
-  .landing-shell .hero-panel {
+  .landing-shell .hero-copy {
     padding: 20px;
   }
 

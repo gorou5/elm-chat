@@ -7,8 +7,8 @@ datumoj Worker.
 - Upstream: https://github.com/shawnbure/elm-chat
 - Upstream commit: 4c3c46c (Merge pull request #143, 2026-11-03 import)
 - License: AGPL-3.0 (see LICENSE). The app keeps its upstream
-  "elm.chat" branding and links to the upstream source, which is the
-  public source for this instance.
+  "elm.chat" branding; the landing footer links to this fork, which
+  is the public source for the modified version running here.
 - Cloudflare account: Datumoj (credentials in ~/.cloudflare-2.env,
   never commit them)
 - Worker name: `babili` (independent Worker, `workers_dev` disabled)
@@ -41,12 +41,11 @@ Local changes vs upstream (branch `babili`):
    MarketingPage are not translated yet. `apps/web/index.html`
    carries the Chinese title/meta and babili.datumoj.com canonical
    URLs.
-5. AGPL source links: the app's prominent "view source / fork"
-   links point at this fork (`SOURCE_URL` in `apps/web/src/App.tsx`,
+5. AGPL source link: the landing footer links to this fork
+   (`SOURCE_URL` in `apps/web/src/App.tsx`,
    https://github.com/gorou5/elm-chat) because AGPL-3.0 section 13
    requires offering the source of the modified version actually
-   running. Upstream links remain where they describe upstream
-   (star counts, community issues, releases, deploy-your-own).
+   running.
 6. Short room URLs (2026-11-03): `ROOM_ID_BYTES` 16 -> 6, so room
    IDs are exactly 8 base64url characters and room/invite URLs are
    root-level (`babili.datumoj.com/xxxxxxxx`) instead of
@@ -59,10 +58,16 @@ Local changes vs upstream (branch `babili`):
    implemented as a scoped override section at the end of
    `apps/web/src/styles.css` (`.landing-shell ...`) without adding
    Tailwind/Radix, so upstream merges stay manageable and the room
-   UI keeps the upstream theme. Layout: brand + nav moved to a top
-   header; the GitHub block moved out of the hero panel into a
-   page footer, bottom-left (this fork's source first, upstream
-   second, plus the AGPL-3.0 license link and star/fork counts).
+   UI keeps the upstream theme.
+8. Minimal information architecture (2026-11-03): the landing
+   keeps only information that changes the visitor's decision —
+   what the service is, the two retention controls, the security
+   warning and limitations link, creation errors, and the source
+   link. Removed: the explanatory lede and brand gloss, promotional
+   / article / press links, the Freshcode arrival card, the GitHub
+   community feed, duplicated policy metrics, star/fork counts,
+   and the room-secret explainer. The GitHub source link sits
+   alone at the bottom-left of the page footer.
 
 Redeploy (automatic, since 2026-11-03):
 

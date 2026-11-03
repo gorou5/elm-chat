@@ -395,6 +395,15 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       this.loginGuard.fails = 0;
       for (const [token, member] of this.members) {
         if (member.name === OWNER_NAME) {
+          // The password is the authority: adopt any existing member
+          // carrying the name (e.g. one created before this login
+          // existed) as the permanent operator account.
+          if (member.kind !== "owner" || member.expiresAt !== null || !member.renamed) {
+            member.kind = "owner";
+            member.expiresAt = null;
+            member.renamed = true;
+            await this.persist();
+          }
           return json({ token, ...this.memberView(member) });
         }
       }

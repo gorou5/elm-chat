@@ -989,22 +989,48 @@ select {
   flex-wrap: wrap;
 }
 
-.setting-controls-disabled .setting-input,
-.setting-controls-disabled .setting-select {
+.setting-controls-disabled .setting-input {
   opacity: 0.44;
 }
 
-.setting-input,
-.setting-select {
+.setting-input {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
   border-radius: 12px;
   padding: 10px 12px;
+  width: 88px;
 }
 
-.setting-input {
-  width: 88px;
+.unit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.unit-toggle-button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 11px;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.unit-toggle-button-active {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.unit-toggle-button:disabled {
+  opacity: 0.44;
+  cursor: not-allowed;
 }
 
 .toggle-pill {
@@ -1692,29 +1718,6 @@ select {
   color: var(--foreground);
 }
 
-.landing-shell .hero-links {
-  margin: 0;
-  justify-content: flex-end;
-  gap: 2px;
-}
-
-.landing-shell .hero-link {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #3f3f46;
-  font-size: 0.875rem;
-}
-
-.landing-shell .hero-link:hover {
-  transform: none;
-  background: #f4f4f5;
-  box-shadow: none;
-  color: var(--foreground);
-}
-
 .landing-shell .hero {
   flex: 1;
   width: 100%;
@@ -1770,8 +1773,7 @@ select {
   color: var(--muted-foreground);
 }
 
-.landing-shell .setting-input,
-.landing-shell .setting-select {
+.landing-shell .setting-input {
   height: 36px;
   padding: 0 10px;
   border: 1px solid var(--border);
@@ -1779,6 +1781,26 @@ select {
   background: #ffffff;
   font-size: 0.875rem;
   box-shadow: 0 1px 2px rgba(9, 9, 11, 0.04);
+}
+
+.landing-shell .unit-toggle {
+  border-color: var(--border);
+  border-radius: 8px;
+  background: #f4f4f5;
+  padding: 3px;
+}
+
+.landing-shell .unit-toggle-button {
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.landing-shell .unit-toggle-button-active {
+  background: #ffffff;
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.08);
 }
 
 .landing-shell .toggle-pill {
@@ -1825,15 +1847,16 @@ select {
 .footer-source {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
   color: var(--foreground);
-  font-size: 0.82rem;
-  font-weight: 500;
   text-decoration: none;
 }
 
 .footer-source:hover {
-  text-decoration: underline;
+  background: #f4f4f5;
 }
 
 @media (max-width: 900px) {

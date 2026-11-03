@@ -320,6 +320,36 @@ function formatSelectedDuration(amount: string, unit: DurationUnit, indefinite: 
   return `${value} ${label}`;
 }
 
+function DurationUnitButtons({
+  disabled = false,
+  label,
+  onChange,
+  value
+}: {
+  disabled?: boolean;
+  label: string;
+  onChange: (unit: DurationUnit) => void;
+  value: DurationUnit;
+}) {
+  const units: DurationUnit[] = ["minutes", "hours", "days"];
+  return (
+    <div className="unit-toggle" role="group" aria-label={label}>
+      {units.map((unit) => (
+        <button
+          aria-pressed={value === unit}
+          className={`unit-toggle-button ${value === unit ? "unit-toggle-button-active" : ""}`}
+          disabled={disabled}
+          key={unit}
+          onClick={() => onChange(unit)}
+          type="button"
+        >
+          {t(unit)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function parseDurationDraft(
   draft: DurationDraft,
   fallbackValue: number,
@@ -865,11 +895,6 @@ function LandingPage() {
         <p className="hero-brand">
           <span className="hero-brand-name">Babili</span>
         </p>
-        <nav className="hero-links" aria-label={t("learnAbout")}>
-          <a className="hero-link" href="/security-and-limitations">
-            {t("securityStatus")}
-          </a>
-        </nav>
       </header>
       <section className="hero">
         <div className="hero-copy">
@@ -894,22 +919,14 @@ function LandingPage() {
                   type="number"
                   value={messageDuration.indefinite ? "" : messageDuration.amount}
                 />
-                <select
-                  aria-label={t("messageDurationUnit")}
-                  className="setting-select"
+                <DurationUnitButtons
                   disabled={messageDuration.indefinite}
-                  onChange={(event) =>
-                    setMessageDuration((current) => ({
-                      ...current,
-                      unit: event.target.value as DurationUnit
-                    }))
+                  label={t("messageDurationUnit")}
+                  onChange={(unit) =>
+                    setMessageDuration((current) => ({ ...current, unit }))
                   }
                   value={messageDuration.unit}
-                >
-                  <option value="minutes">{t("minutes")}</option>
-                  <option value="hours">{t("hours")}</option>
-                  <option value="days">{t("days")}</option>
-                </select>
+                />
                 <label className="toggle-pill">
                   <input
                     aria-labelledby="message-policy-label message-indefinite-label"
@@ -947,22 +964,14 @@ function LandingPage() {
                   type="number"
                   value={roomDuration.indefinite ? "" : roomDuration.amount}
                 />
-                <select
-                  aria-label={t("roomDurationUnit")}
-                  className="setting-select"
+                <DurationUnitButtons
                   disabled={roomDuration.indefinite}
-                  onChange={(event) =>
-                    setRoomDuration((current) => ({
-                      ...current,
-                      unit: event.target.value as DurationUnit
-                    }))
+                  label={t("roomDurationUnit")}
+                  onChange={(unit) =>
+                    setRoomDuration((current) => ({ ...current, unit }))
                   }
                   value={roomDuration.unit}
-                >
-                  <option value="minutes">{t("minutes")}</option>
-                  <option value="hours">{t("hours")}</option>
-                  <option value="days">{t("days")}</option>
-                </select>
+                />
                 <label className="toggle-pill">
                   <input
                     aria-labelledby="room-policy-label room-indefinite-label"
@@ -987,9 +996,15 @@ function LandingPage() {
         </div>
       </section>
       <footer className="landing-footer">
-        <a className="footer-source" href={SOURCE_URL} rel="noreferrer" target="_blank">
-          <GithubMark size={16} />
-          <span>{t("viewSource")} · github.com/gorou5/elm-chat</span>
+        <a
+          aria-label={t("viewSource")}
+          className="footer-source"
+          href={SOURCE_URL}
+          rel="noreferrer"
+          target="_blank"
+          title={t("viewSource")}
+        >
+          <GithubMark size={20} />
         </a>
       </footer>
     </main>
@@ -2534,21 +2549,13 @@ function RoomPage({ roomId }: { roomId: string }) {
               type="number"
               value={inviteDuration.amount}
             />
-            <select
-              aria-label={t("inviteLifetimeUnit")}
-              className="setting-select"
-              onChange={(event) =>
-                setInviteDuration((current) => ({
-                  ...current,
-                  unit: event.target.value as DurationUnit
-                }))
+            <DurationUnitButtons
+              label={t("inviteLifetimeUnit")}
+              onChange={(unit) =>
+                setInviteDuration((current) => ({ ...current, unit }))
               }
               value={inviteDuration.unit}
-            >
-              <option value="minutes">{t("minutes")}</option>
-              <option value="hours">{t("hours")}</option>
-              <option value="days">{t("days")}</option>
-            </select>
+            />
           </div>
         </section>
       ) : null}

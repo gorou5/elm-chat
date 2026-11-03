@@ -63,12 +63,19 @@ Local changes vs upstream (branch `babili`):
 8. Minimal information architecture (2026-11-03): the landing
    keeps only information that changes the visitor's decision —
    what the service is, the two retention controls, the security
-   warning and limitations link, creation errors, and the source
-   link. Removed: the explanatory lede and brand gloss, promotional
-   / article / press links, the Freshcode arrival card, the GitHub
-   community feed, duplicated policy metrics, star/fork counts,
-   and the room-secret explainer. The GitHub source link sits
-   alone at the bottom-left of the page footer.
+   warning, creation errors, and the source link. Removed: the
+   explanatory lede and brand gloss, promotional / article /
+   press links, the Freshcode arrival card, the GitHub community
+   feed, duplicated policy metrics, star/fork counts, the
+   room-secret explainer, and the header's security-and-limitations
+   link (not required; the warning itself stays). The document
+   title is just "Babili"; the Chinese headline opens with
+   "论巴别塔的倒掉。". Duration units (minutes/hours/days) are
+   segmented buttons everywhere, not dropdowns — landing creation
+   settings and the room's invite lifetime alike. The only GitHub
+   reference on the landing is a single GitHub icon at the
+   bottom-left, linking to this fork (the AGPL source offer);
+   the JSON-LD sameAs likewise lists only the fork.
 9. Babili rebrand (2026-11-03): every user-facing product name —
    landing and room UI in all three locales, page titles/meta and
    JSON-LD, the marketing pages (React source and prerender

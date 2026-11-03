@@ -2267,3 +2267,18 @@ select {
     opacity: 0.3;
   }
 }
+
+.square-shell .icon-button,
+.invite-shell .icon-button {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  padding: 9px 11px;
+}
+
+/* The invite-code box fits exactly the 6 characters of a code. */
+.square-join #invite-code {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  width: calc(6ch + 36px);
+}

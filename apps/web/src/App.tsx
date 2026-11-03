@@ -759,6 +759,53 @@ function NewChatIcon({ size = 20 }: { size?: number }) {
   );
 }
 
+function LogInIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={size}>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <path d="m10 17 5-5-5-5" />
+      <path d="M15 12H3" />
+    </svg>
+  );
+}
+
+function SendIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={size}>
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
+    </svg>
+  );
+}
+
+function PencilIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={size}>
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
+function CheckIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={size}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function UserPlusIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={size}>
+      <path d="M2 21a8 8 0 0 1 13.292-6.292" />
+      <circle cx="10" cy="8" r="5" />
+      <path d="M19 16v6" />
+      <path d="M22 19h-6" />
+    </svg>
+  );
+}
+
 function FileCard({ file, onDownload }: { file: UiFile; onDownload: () => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const progress = file.progress ?? 0;
@@ -1254,8 +1301,14 @@ function SquarePage() {
                     onChange={(event) => setRenameValue(event.target.value)}
                     value={renameValue}
                   />
-                  <button className="secondary-button" id="rename-save" type="submit">
-                    {t("saveName")}
+                  <button
+                    aria-label={t("saveName")}
+                    className="secondary-button icon-button"
+                    id="rename-save"
+                    title={t("saveName")}
+                    type="submit"
+                  >
+                    <CheckIcon />
                   </button>
                 </form>
               ) : (
@@ -1263,28 +1316,32 @@ function SquarePage() {
                   <span className="square-member-name">{member.name}</span>
                   {!member.renamed ? (
                     <button
-                      className="secondary-button"
+                      aria-label={t("changeName")}
+                      className="secondary-button icon-button"
                       id="rename-button"
                       onClick={() => {
                         setRenameError(null);
                         setRenameValue(member.name);
                         setRenaming(true);
                       }}
+                      title={t("changeName")}
                       type="button"
                     >
-                      {t("changeName")}
+                      <PencilIcon />
                     </button>
                   ) : null}
                 </>
               )}
               {member.canInvite ? (
                 <button
-                  className="secondary-button"
+                  aria-label={t("generateInviteCode")}
+                  className="secondary-button icon-button"
                   id="generate-invite"
                   onClick={() => void generateInvite()}
+                  title={t("generateInviteCode")}
                   type="button"
                 >
-                  {t("generateInviteCode")}
+                  <UserPlusIcon />
                 </button>
               ) : null}
             </>
@@ -1364,27 +1421,38 @@ function SquarePage() {
               placeholder={t("writeMessage")}
               value={draft}
             />
-            <button className="primary-button" disabled={!draft.trim()} id="send-button" type="submit">
-              {t("sendMessage")}
+            <button
+              aria-label={t("sendMessage")}
+              className="primary-button icon-button"
+              disabled={!draft.trim()}
+              id="send-button"
+              title={t("sendMessage")}
+              type="submit"
+            >
+              <SendIcon />
             </button>
           </form>
         ) : (
           <form className="square-join" onSubmit={submitJoin}>
-            <label htmlFor="invite-code">{t("inviteCode")}</label>
             <input
+              aria-label={t("inviteCode")}
               autoCapitalize="characters"
               autoComplete="off"
               id="invite-code"
+              maxLength={6}
               onChange={(event) => setCode(event.target.value)}
+              placeholder={t("inviteCode")}
               value={code}
             />
             <button
-              className="primary-button"
+              aria-label={t("joinChat")}
+              className="primary-button icon-button"
               disabled={joining || !code.trim()}
               id="join-button"
+              title={t("joinChat")}
               type="submit"
             >
-              {t("joinChat")}
+              <LogInIcon />
             </button>
           </form>
         )}
@@ -1451,21 +1519,24 @@ function EnsalutiPage() {
           </div>
         ) : (
           <form className="square-join invite-join" onSubmit={submitLogin}>
-            <label htmlFor="sandal-password">{t("passwordLabel")}</label>
             <input
+              aria-label={t("passwordLabel")}
               autoComplete="current-password"
               id="sandal-password"
               onChange={(event) => setPassword(event.target.value)}
+              placeholder={t("passwordLabel")}
               type="password"
               value={password}
             />
             <button
-              className="primary-button"
+              aria-label={t("loginAction")}
+              className="primary-button icon-button"
               disabled={busy || !password}
               id="login-button"
+              title={t("loginAction")}
               type="submit"
             >
-              {t("loginAction")}
+              <LogInIcon />
             </button>
             {error ? (
               <p className="error-text" role="alert">

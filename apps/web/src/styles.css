@@ -2119,14 +2119,6 @@ select {
   .square-actions {
     order: 2;
   }
-
-  .square-clock {
-    flex-basis: 100%;
-    order: 3;
-    position: static;
-    text-align: center;
-    transform: none;
-  }
 }
 
 /* ---- Babili invite page (/invite, unlinked) ---- */
@@ -2284,6 +2276,22 @@ select {
   }
   50% {
     opacity: 0.3;
+  }
+}
+
+/* Mobile: the clock takes its own full-width row under the
+   brand/actions row. This block must stay AFTER the base
+   .square-clock rule above: both are single-class selectors,
+   so source order decides — when this override lived earlier
+   in the file it was dead code and the clock stayed
+   absolutely centered over the brand subtitle. */
+@media (max-width: 640px) {
+  .square-clock {
+    flex-basis: 100%;
+    order: 3;
+    position: static;
+    text-align: center;
+    transform: none;
   }
 }
 

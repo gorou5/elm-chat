@@ -2149,6 +2149,11 @@ select {
   background: #dc2626;
 }
 
+/* Vertical slot gauge: mobile only (see the 900px block below). */
+.square-side-slot {
+  display: none;
+}
+
 .square-side-reset {
   color: var(--muted-foreground);
   font-size: 12px;
@@ -2180,7 +2185,8 @@ select {
   }
 
   /* Simplified usage on mobile: one slim strip of chips —
-     avatar, name, percent. No bar, no reset line. */
+     avatar, name, and a small vertical slot whose fill depth
+     is the remaining usage. No numbers, no bar, no reset line. */
   .square-side-title {
     flex-shrink: 0;
     margin: 0;
@@ -2193,16 +2199,46 @@ select {
   }
 
   .square-side-item {
+    align-items: center;
+    display: flex;
     flex-shrink: 0;
+    gap: 7px;
   }
 
   .square-side-name {
     max-width: 96px;
   }
 
+  .square-side-pct,
   .square-side-bar,
   .square-side-reset {
     display: none;
+  }
+
+  .square-side-slot {
+    background: #e9e2cf;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    box-sizing: border-box;
+    display: block;
+    flex-shrink: 0;
+    height: 20px;
+    overflow: hidden;
+    position: relative;
+    width: 9px;
+  }
+
+  .square-side-slot > span {
+    background: var(--primary);
+    bottom: 0;
+    display: block;
+    left: 0;
+    position: absolute;
+    width: 100%;
+  }
+
+  .square-side-slot--low > span {
+    background: #dc2626;
   }
 }
 

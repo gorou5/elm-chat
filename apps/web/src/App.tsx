@@ -1513,7 +1513,11 @@ function SquarePage() {
           ) : (
             <ul className="square-side-list">
               {bots.map((bot) => (
-                <li className="square-side-item" key={bot.name}>
+                <li
+                  className="square-side-item"
+                  key={bot.name}
+                  title={bot.usage ? `剩余 ${bot.usage.percent}%` : undefined}
+                >
                   <div className="square-side-row">
                     {bot.avatar ? (
                       <img alt="" className="square-msg-avatar" src={bot.avatar} />
@@ -1525,6 +1529,12 @@ function SquarePage() {
                   </div>
                   {bot.usage ? (
                     <>
+                      <span
+                        aria-hidden="true"
+                        className={`square-side-slot${bot.usage.percent <= 20 ? " square-side-slot--low" : ""}`}
+                      >
+                        <span style={{ height: `${bot.usage.percent}%` }} />
+                      </span>
                       <div
                         className={`square-side-bar${bot.usage.percent <= 20 ? " square-side-bar--low" : ""}`}
                       >

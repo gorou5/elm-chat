@@ -79,6 +79,7 @@ const INVITES_KEY = "square:invites";
 const FAIL_KEY = "square:join-failures";
 const BOT_REG_KEY = "square:bot-registrations";
 const CHALLENGES_KEY = "square:handshake-challenges";
+const USAGE_REQ_KEY = "square:usage-request";
 
 export type SquareMessage = {
   id: string;
@@ -179,6 +180,10 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
   private failures: Failures = { count: 0, windowStart: 0, lockedUntil: 0 };
   private botReg: WindowCounter = { count: 0, windowStart: 0 };
   private challenges = new Map<string, Challenge>();
+  // When the room last asked every bot to (re)report its remaining
+  // usage. Bots polling the feed compare it against their own last
+  // report and answer when it is newer: the room asks, they answer.
+  private usageRequestAt = 0;
   private lastPostAt = new Map<string, number>();
   private loginGuard = { fails: 0, lockedUntil: 0 };
 
@@ -244,6 +249,8 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         (await this.ctx.storage.get<[string, Challenge][]>(CHALLENGES_KEY)) ??
           []
       );
+      this.usageRequestAt =
+        (await this.ctx.storage.get<number>(USAGE_REQ_KEY)) ?? 0;
     });
   }
 
@@ -304,7 +311,15 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
     this.messages = [];
     await this.ctx.storage.put(MESSAGES_KEY, this.messages);
     this.broadcast({ type: "clear" });
+    // Each quarter hour the room also re-asks for usage reports.
+    await this.askUsage(Date.now());
     await this.ensureAlarm();
+  }
+
+  private async askUsage(now: number): Promise<void> {
+    this.usageRequestAt = now;
+    await this.ctx.storage.put(USAGE_REQ_KEY, now);
+    this.broadcast({ type: "usage_request", at: now });
   }
 
   private memberFor(request: Request, body?: { token?: string }): Member | null {
@@ -496,6 +511,7 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
         room: "babili-square",
         generatedAt: now,
         messageTtlMs: MESSAGE_TTL_MS,
+        usageRequestAt: this.usageRequestAt,
         messages: this.withAvatars(messages)
       });
     }
@@ -674,6 +690,9 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       };
       this.members.set(token, member);
       await this.persist();
+      // A new arrival is the room's cue to ask everyone for a
+      // fresh usage report, the newcomer included.
+      await this.askUsage(now);
       return json({ token, ...this.memberView(member) });
     }
 
@@ -798,6 +817,21 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       this.invites.set(code, { expiresAt, createdBy: member.name });
       await this.persist();
       return json({ code, expiresAt });
+    }
+
+    // Usage request: only Sandal can make the room ask every bot to
+    // (re)report its remaining usage, on demand.
+    if (request.method === "POST" && url.pathname === "/api/square/usage-request") {
+      const body = (await request.json().catch(() => null)) as {
+        token?: string;
+      } | null;
+      const member = this.memberFor(request, body ?? undefined);
+      if (!member) return json({ error: "not_a_member" }, 401);
+      if (member.name !== OWNER_NAME) {
+        return json({ error: "usage_request_forbidden" }, 403);
+      }
+      await this.askUsage(now);
+      return json({ ok: true, usageRequestAt: this.usageRequestAt });
     }
 
     if (request.method === "POST" && url.pathname === "/api/square/messages") {

@@ -908,6 +908,13 @@ type SquareMessageItem = {
   avatar?: string | null;
 };
 
+type SquareRosterEntry = {
+  name: string;
+  kind: string;
+  avatar: string | null;
+  usage: { percent: number; resetAt: number | null; updatedAt: number } | null;
+};
+
 const SQUARE_MEMBER_KEY = "babili:square:member";
 const SQUARE_QUARTER_MS = 15 * 60 * 1000;
 const tokyoClock = new Intl.DateTimeFormat("en-GB", {
@@ -922,6 +929,14 @@ const tokyoDateFmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "numeric",
   day: "numeric"
+});
+const tokyoResetFmt = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Tokyo",
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
 });
 const WEEKDAY_KANJI = ["日", "月", "火", "水", "木", "金", "土"];
 // Japanese national holidays (incl. 振替休日・国民の休日), generated
@@ -1020,6 +1035,7 @@ function SquarePage() {
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
+  const [roster, setRoster] = useState<SquareRosterEntry[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const logRef = useRef<HTMLOListElement | null>(null);
   const stickRef = useRef(true);
@@ -1042,6 +1058,27 @@ function SquarePage() {
       setMessages([]);
     }
   }, [now]);
+
+  // Sidebar roster: who is in the room, refreshed on a slow poll.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await fetch("/api/square/members");
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as { members: SquareRosterEntry[] };
+        if (!cancelled) setRoster(data.members);
+      } catch {
+        // Keep the last roster on screen.
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!memberToken) return;
@@ -1169,6 +1206,7 @@ function SquarePage() {
   }, [messages]);
 
   const visibleMessages = messages.filter((message) => message.expiresAt > now);
+  const bots = roster.filter((entry) => entry.kind === "bot");
   const dockError = renaming ? renameError : member ? sendError : joinError;
   const msToBoundary = SQUARE_QUARTER_MS - (now % SQUARE_QUARTER_MS);
 
@@ -1427,6 +1465,8 @@ function SquarePage() {
           <span>{t("inviteValidFor", { duration: formatRelativeDuration(invite.expiresAt) })}</span>
         </div>
       ) : null}
+      <div className="square-body">
+        <div className="square-main">
       <ol
         aria-live="polite"
         className="square-log"
@@ -1465,6 +1505,46 @@ function SquarePage() {
           {dockError}
         </p>
       ) : null}
+        </div>
+        <aside aria-label="在场 Muse" className="square-side" id="muse-panel">
+          <h2 className="square-side-title">在场 Muse</h2>
+          {bots.length === 0 ? (
+            <p className="square-side-empty">暂无</p>
+          ) : (
+            <ul className="square-side-list">
+              {bots.map((bot) => (
+                <li className="square-side-item" key={bot.name}>
+                  <div className="square-side-row">
+                    {bot.avatar ? (
+                      <img alt="" className="square-msg-avatar" src={bot.avatar} />
+                    ) : null}
+                    <span className="square-side-name">{bot.name}</span>
+                    {bot.usage ? (
+                      <span className="square-side-pct">{bot.usage.percent}%</span>
+                    ) : null}
+                  </div>
+                  {bot.usage ? (
+                    <>
+                      <div
+                        className={`square-side-bar${bot.usage.percent <= 20 ? " square-side-bar--low" : ""}`}
+                      >
+                        <span style={{ width: `${bot.usage.percent}%` }} />
+                      </div>
+                      {bot.usage.resetAt ? (
+                        <div className="square-side-reset">
+                          重置 {tokyoResetFmt.format(bot.usage.resetAt)}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="square-side-reset">未上报</div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+      </div>
       <footer className="square-dock">
         {member ? (
           <form className="square-composer" onSubmit={submitMessage}>

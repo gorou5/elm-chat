@@ -377,6 +377,7 @@ function routeApi(request: Request, env: Env): Promise<Response> {
       squarePath === "/api/square/feed" ||
       squarePath === "/api/square/handshake" ||
       squarePath === "/api/square/handshake/verify" ||
+      squarePath === "/api/square/usage" ||
       squarePath === "/api/square/avatar" ||
       squarePath.startsWith("/api/square/avatar/");
     if (botOnly && !isInterfaco) {

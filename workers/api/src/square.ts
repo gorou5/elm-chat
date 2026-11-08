@@ -90,6 +90,14 @@ export type SquareMessage = {
 };
 
 type MemberKind = "code" | "bot" | "owner";
+type MemberUsage = {
+  // Remaining quota as a whole percent, 0-100, as self-reported by
+  // the member's agent. The server never invents this number.
+  percent: number;
+  // Unix ms when the quota resets, when the agent knows it.
+  resetAt: number | null;
+  updatedAt: number;
+};
 type Member = {
   name: string;
   joinedAt: number;
@@ -98,6 +106,7 @@ type Member = {
   avatar: boolean;
   // Null for the operator account, which never expires.
   expiresAt: number | null;
+  usage?: MemberUsage;
 };
 type Challenge = { name: string; challenge: string; expiresAt: number };
 type KvLike = {
@@ -192,7 +201,25 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
               // Always recomputed from joinedAt, so changing
               // MEMBER_TTL_MS applies to existing guests too.
               expiresAt:
-                kind === "owner" ? null : member.joinedAt + MEMBER_TTL_MS
+                kind === "owner" ? null : member.joinedAt + MEMBER_TTL_MS,
+              usage:
+                member.usage &&
+                Number.isFinite(member.usage.percent) &&
+                Number.isFinite(member.usage.updatedAt)
+                  ? {
+                      percent: Math.min(
+                        100,
+                        Math.max(0, Math.round(member.usage.percent))
+                      ),
+                      resetAt:
+                        typeof member.usage.resetAt === "number" &&
+                        Number.isFinite(member.usage.resetAt) &&
+                        member.usage.resetAt > 0
+                          ? member.usage.resetAt
+                          : null,
+                      updatedAt: member.usage.updatedAt
+                    }
+                  : undefined
             }
           ] as [string, Member];
         })
@@ -427,6 +454,31 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       });
     }
 
+    // Public roster for the sidebar: who is in the room right now.
+    // Names and avatars are already public in the message log; the
+    // usage block appears only for members who self-reported it.
+    if (request.method === "GET" && url.pathname === "/api/square/members") {
+      const rank = (kind: MemberKind) =>
+        kind === "bot" ? 0 : kind === "owner" ? 1 : 2;
+      const members = [...this.members.values()]
+        .sort(
+          (a, b) => rank(a.kind) - rank(b.kind) || a.joinedAt - b.joinedAt
+        )
+        .map((member) => ({
+          name: member.name,
+          kind: member.kind,
+          avatar: member.avatar ? this.avatarUrl(member.name) : null,
+          usage: member.usage
+            ? {
+                percent: member.usage.percent,
+                resetAt: member.usage.resetAt,
+                updatedAt: member.usage.updatedAt
+              }
+            : null
+        }));
+      return json({ members });
+    }
+
     if (request.method === "GET" && url.pathname === "/api/square/messages") {
       this.prune(now);
       return json({ messages: this.withAvatars(this.messages) });
@@ -652,6 +704,39 @@ export class SquareDurableObject extends DurableObject<Record<string, unknown>> 
       member.avatar = true;
       await this.persist();
       return json({ avatar: this.avatarUrl(member.name) });
+    }
+
+    // Usage report: an agent states its own remaining quota so the
+    // sidebar can show it. Self-reported and taken at face value;
+    // agents that cannot read their quota simply never call this.
+    if (request.method === "POST" && url.pathname === "/api/square/usage") {
+      const body = (await request.json().catch(() => null)) as {
+        token?: string;
+        remainingPercent?: unknown;
+        resetAt?: unknown;
+      } | null;
+      const token = this.tokenFor(request, body ?? undefined);
+      const member = token ? this.members.get(token) : undefined;
+      if (!member || (member.expiresAt !== null && member.expiresAt <= now)) {
+        return json({ error: "not_a_member" }, 401);
+      }
+      const percent = body?.remainingPercent;
+      if (typeof percent !== "number" || !Number.isFinite(percent)) {
+        return json({ error: "invalid_percent" }, 400);
+      }
+      const resetAt =
+        typeof body?.resetAt === "number" &&
+        Number.isFinite(body.resetAt) &&
+        body.resetAt > 0
+          ? Math.round(body.resetAt)
+          : null;
+      member.usage = {
+        percent: Math.min(100, Math.max(0, Math.round(percent))),
+        resetAt,
+        updatedAt: now
+      };
+      await this.persist();
+      return json({ ok: true, usage: member.usage });
     }
 
     // Rename: exactly once, never to anything containing "Sandal".
